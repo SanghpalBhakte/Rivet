@@ -25,32 +25,38 @@ export const MobileNav: React.FC = () => {
       </header>
 
       {isOpen && (
-        <div className="rv-mobile-drawer" role="dialog" aria-label="Mobile Navigation Menu">
-          <div style={{ padding: '8px 0', borderBottom: '1px solid var(--rv-border-subtle)' }}>
-            <span style={{ fontSize: '11px', color: 'var(--rv-text-muted)', textTransform: 'uppercase' }}>
-              Active Module
-            </span>
+        <div
+          className="rv-mobile-overlay"
+          onClick={() => setIsOpen(false)}
+          role="dialog"
+          aria-modal="true"
+          aria-label="Mobile Navigation Drawer"
+        >
+          <div
+            className="rv-mobile-drawer"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div style={{ padding: '4px 0 8px', borderBottom: '1px solid var(--rv-border-subtle)', marginBottom: '4px' }}>
+              <span style={{ fontSize: '11px', color: 'var(--rv-text-muted)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                Operational Modules
+              </span>
+            </div>
+            <button className="rv-sidebar__link rv-sidebar__link--active" onClick={() => setIsOpen(false)}>
+              <span>Dashboard</span>
+            </button>
+            <button className="rv-sidebar__link rv-sidebar__link--disabled" disabled aria-disabled="true">
+              <span>Leads</span>
+            </button>
+            <button className="rv-sidebar__link rv-sidebar__link--disabled" disabled aria-disabled="true">
+              <span>Customers</span>
+            </button>
+            <button className="rv-sidebar__link rv-sidebar__link--disabled" disabled aria-disabled="true">
+              <span>Jobs</span>
+            </button>
+            <button className="rv-sidebar__link rv-sidebar__link--disabled" disabled aria-disabled="true">
+              <span>Payments</span>
+            </button>
           </div>
-          <button className="rv-sidebar__link rv-sidebar__link--active">
-            <span>Dashboard</span>
-            <span className="rv-num">Live</span>
-          </button>
-          <button className="rv-sidebar__link rv-sidebar__link--disabled" disabled>
-            <span>Leads</span>
-            <span className="rv-sidebar__badge-soon">Phase 2</span>
-          </button>
-          <button className="rv-sidebar__link rv-sidebar__link--disabled" disabled>
-            <span>Customers</span>
-            <span className="rv-sidebar__badge-soon">Soon</span>
-          </button>
-          <button className="rv-sidebar__link rv-sidebar__link--disabled" disabled>
-            <span>Jobs</span>
-            <span className="rv-sidebar__badge-soon">Soon</span>
-          </button>
-          <button className="rv-sidebar__link rv-sidebar__link--disabled" disabled>
-            <span>Payments</span>
-            <span className="rv-sidebar__badge-soon">Soon</span>
-          </button>
         </div>
       )}
     </>

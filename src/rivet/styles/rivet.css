@@ -25,10 +25,15 @@
   --rv-text-dim: #475569;
 
   /* Operational Status Colors (Muted, Non-glowing) */
-  /* Overdue / Critical — Muted Amber-Rust */
-  --rv-status-overdue-text: #f59e0b;
-  --rv-status-overdue-bg: rgba(245, 158, 11, 0.1);
-  --rv-status-overdue-border: rgba(245, 158, 11, 0.25);
+  /* Overdue / Critical — Amber-Rust */
+  --rv-status-overdue-text: #fbbf24;
+  --rv-status-overdue-bg: rgba(245, 158, 11, 0.12);
+  --rv-status-overdue-border: rgba(245, 158, 11, 0.3);
+
+  /* Overdue Button Action Accent */
+  --rv-btn-overdue-bg: #d97706;
+  --rv-btn-overdue-hover: #b45309;
+  --rv-btn-overdue-text: #ffffff;
 
   /* Today / Callback — Muted Steel Blue */
   --rv-status-callback-text: #38bdf8;
@@ -57,7 +62,6 @@
 
   /* Fonts & Tabular Data */
   --rv-font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  --rv-font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, monospace;
 
   /* Spacing Grid (4px scale) */
   --rv-space-1: 4px;
@@ -142,7 +146,7 @@
 }
 
 /* --------------------------------------------------------------------------
-   Sidebar Components
+   Sidebar Components (Muted Prototype Signals)
    -------------------------------------------------------------------------- */
 .rv-sidebar__header {
   padding: var(--rv-space-4);
@@ -159,10 +163,9 @@
   font-weight: 700;
   letter-spacing: 0.08em;
   font-size: 14px;
-  color: var(--rv-text-primary);
+  color: #fff;
   text-transform: uppercase;
   background: var(--rv-border-strong);
-  color: #fff;
   padding: 2px 8px;
   border-radius: var(--rv-radius-sm);
 }
@@ -218,19 +221,8 @@
 }
 
 .rv-sidebar__link--disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.rv-sidebar__badge-soon {
-  font-size: 10px;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  padding: 1px 5px;
-  border-radius: 3px;
-  background: var(--rv-bg-input);
-  border: 1px solid var(--rv-border-subtle);
-  color: var(--rv-text-muted);
+  opacity: 0.4;
+  cursor: default;
 }
 
 .rv-sidebar__footer {
@@ -252,7 +244,7 @@
 }
 
 /* --------------------------------------------------------------------------
-   Mobile Navigation Header
+   Mobile Navigation Sheet/Drawer (Compact, Professional)
    -------------------------------------------------------------------------- */
 .rv-mobile-bar {
   display: none;
@@ -272,19 +264,33 @@
   }
 }
 
-.rv-mobile-drawer {
+.rv-mobile-overlay {
   position: fixed;
   top: 53px;
   left: 0;
   right: 0;
   bottom: 0;
-  background: var(--rv-bg-surface);
+  background: rgba(0, 0, 0, 0.65);
+  backdrop-filter: blur(2px);
   z-index: 45;
-  padding: var(--rv-space-4);
-  border-bottom: 1px solid var(--rv-border-default);
   display: flex;
   flex-direction: column;
-  gap: var(--rv-space-2);
+}
+
+.rv-mobile-drawer {
+  background: var(--rv-bg-surface);
+  border-bottom: 1px solid var(--rv-border-strong);
+  padding: var(--rv-space-3) var(--rv-space-4) var(--rv-space-4);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5);
+  animation: rv-drawer-slide 0.2s ease-out;
+}
+
+@keyframes rv-drawer-slide {
+  from { transform: translateY(-10px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
 }
 
 /* --------------------------------------------------------------------------
@@ -308,7 +314,7 @@
   flex-wrap: wrap;
   align-items: flex-start;
   justify-content: space-between;
-  gap: var(--rv-space-4);
+  gap: var(--rv-space-3);
   margin-bottom: var(--rv-space-5);
   padding-bottom: var(--rv-space-4);
   border-bottom: 1px solid var(--rv-border-subtle);
@@ -344,7 +350,7 @@
 .rv-dev-controls {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 4px;
   background: var(--rv-bg-surface);
   border: 1px solid var(--rv-border-subtle);
   padding: 3px 8px;
@@ -454,6 +460,11 @@
   overflow: hidden;
 }
 
+.rv-card--hero {
+  border: 1px solid var(--rv-border-default);
+  box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.3);
+}
+
 .rv-card__header {
   padding: var(--rv-space-4);
   border-bottom: 1px solid var(--rv-border-subtle);
@@ -461,6 +472,14 @@
   align-items: center;
   justify-content: space-between;
   gap: var(--rv-space-3);
+}
+
+@media (max-width: 640px) {
+  .rv-card__header--stack-mobile {
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--rv-space-3);
+  }
 }
 
 .rv-card__title-group {
@@ -500,6 +519,8 @@
   padding: 3px;
   border-radius: var(--rv-radius-md);
   border: 1px solid var(--rv-border-subtle);
+  overflow-x: auto;
+  white-space: nowrap;
 }
 
 .rv-queue-tab {
@@ -515,6 +536,7 @@
   display: flex;
   align-items: center;
   gap: 6px;
+  flex-shrink: 0;
 }
 
 .rv-queue-tab:hover {
@@ -612,6 +634,28 @@
   text-align: right;
 }
 
+/* Priority 5: Mobile Task-Row Layout fix (schedule + CTA clean row) */
+@media (max-width: 640px) {
+  .rv-queue-item {
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--rv-space-3);
+  }
+
+  .rv-queue-item__right {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    padding-top: var(--rv-space-2);
+    border-top: 1px dashed var(--rv-border-subtle);
+  }
+
+  .rv-queue-item__due {
+    text-align: left;
+  }
+}
+
 /* --------------------------------------------------------------------------
    Visually Lighter Summary Column
    -------------------------------------------------------------------------- */
@@ -620,6 +664,7 @@
   border: 1px solid var(--rv-border-subtle);
   border-radius: var(--rv-radius-lg);
   padding: var(--rv-space-4);
+  opacity: 0.92;
 }
 
 .rv-summary-header {
@@ -780,7 +825,7 @@
 }
 
 .rv-btn--sm {
-  padding: 4px 8px;
+  padding: 5px 10px;
   font-size: 11px;
 }
 
@@ -793,6 +838,18 @@
 .rv-btn--primary:hover {
   background-color: #2a374d;
   border-color: var(--rv-text-secondary);
+}
+
+/* Overdue Action Button Priority Styling */
+.rv-btn--overdue {
+  background-color: var(--rv-btn-overdue-bg);
+  color: var(--rv-btn-overdue-text);
+  border-color: var(--rv-status-overdue-border);
+  font-weight: 600;
+}
+
+.rv-btn--overdue:hover {
+  background-color: var(--rv-btn-overdue-hover);
 }
 
 .rv-btn--secondary {

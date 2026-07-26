@@ -33,6 +33,7 @@ export const TodayQueue: React.FC<TodayQueueProps> = ({
       title="Today's Queue"
       subtitle="Operational priority tasks"
       dense
+      className="rv-card--hero"
       headerAction={
         <div className="rv-queue-tabs" role="tablist" aria-label="Filter today's queue">
           <button
@@ -113,7 +114,7 @@ export const TodayQueue: React.FC<TodayQueueProps> = ({
               {/* Item Due & Primary Action */}
               <div className="rv-queue-item__right">
                 <div className="rv-queue-item__due">
-                  <div style={{ fontSize: '11px', color: 'var(--rv-text-muted)', textTransform: 'uppercase' }}>
+                  <div style={{ fontSize: '10px', color: 'var(--rv-text-muted)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
                     Scheduled
                   </div>
                   <div className="rv-tabular" style={{ fontWeight: 500 }}>
@@ -122,7 +123,7 @@ export const TodayQueue: React.FC<TodayQueueProps> = ({
                 </div>
 
                 <Button
-                  variant={item.type === 'overdue' ? 'primary' : 'secondary'}
+                  variant={item.type === 'overdue' ? 'overdue' : 'secondary'}
                   size="sm"
                   onClick={() => onActionComplete(item.id)}
                   aria-label={`${item.actionLabel} for ${item.clientName}`}
