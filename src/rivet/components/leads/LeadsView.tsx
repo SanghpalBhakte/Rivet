@@ -1,13 +1,14 @@
 import React, { useState, useMemo } from 'react';
-import { INITIAL_LEADS, INITIAL_PIPELINE_STAGES } from '../../data/mockData';
+import { INITIAL_LEADS } from '../../data/mockData';
 import { Lead, LeadStage, SimulationMode } from '../../types/rivet';
 import { PageHeader } from '../ui/PageHeader';
-import { PipelineStrip } from '../ui/PipelineStrip';
 import { Card } from '../ui/Card';
 import { EmptyState } from '../ui/EmptyState';
 import { SkeletonRow } from '../ui/Skeleton';
 import { LeadRow } from './LeadRow';
 import { LeadDetailDrawer } from './LeadDetailDrawer';
+import { NewInquiryModal } from './NewInquiryModal';
+import { Button } from '../ui/Button';
 
 export const LeadsView: React.FC = () => {
   const [leads, setLeads] = useState<Lead[]>(INITIAL_LEADS);
@@ -15,8 +16,117 @@ export const LeadsView: React.FC = () => {
   const [stageFilter, setStageFilter] = useState<'All' | LeadStage>('All');
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
   const [simMode, setSimMode] = useState<SimulationMode>('normal');
+  const [isNewInquiryOpen, setIsNewInquiryOpen] = useState(false);
 
-  // Filter leads by search term and stage filter
+  // Stage transition workflow handler
+  const handleStageChange = (leadId: string, newStage: LeadStage) => {
+    setLeads((prevLeads) =>
+      prevLeads.map((l) => {
+        if (l.id !== leadId) return l;
+
+        let actionLabel = 'View Details';
+        if (newStage === 'New') actionLabel = 'Mark Contacted';
+        else if (newStage === 'Contacted') actionLabel = 'Send Quote';
+        else if (newStage === 'Quote Sent') actionLabel = 'Mark Confirmed';
+        else if (newStage === 'Confirmed') actionLabel = 'Close & Archive';
+        else if (newStage === 'Closed' || newStage === 'Lost') actionLabel = 'Reopen Lead';
+
+        const updatedLead: Lead = {
+          ...l,
+          stage: newStage,
+          primaryActionLabel: actionLabel,
+        };
+
+        if (selectedLead && selectedLead.id === leadId) {
+          setSelectedLead(updatedLead);
+        }
+
+        return updatedLead;
+      })
+    );
+  };
+
+  // Follow-up date/time schedule handler
+  const handleScheduleFollowUp = (leadId: string, nextTime: string) => {
+    setLeads((prevLeads) =>
+      prevLeads.map((l) => {
+        if (l.id !== leadId) return l;
+        const updated = { ...l, nextFollowUp: nextTime };
+        if (selectedLead && selectedLead.id === leadId) {
+          setSelectedLead(updated);
+        }
+        return updated;
+      })
+    );
+  };
+
+  // Quote amount update handler
+  const handleUpdateQuote = (leadId: string, amount: string, status: string) => {
+    setLeads((prevLeads) =>
+      prevLeads.map((l) => {
+        if (l.id !== leadId) return l;
+        const updated = {
+          ...l,
+          quoteAmount: amount,
+          quoteStatus: status || `Quote ${amount} Prepared`,
+        };
+        if (selectedLead && selectedLead.id === leadId) {
+          setSelectedLead(updated);
+        }
+        return updated;
+      })
+    );
+  };
+
+  // Add Note handler
+  const handleAddNote = (leadId: string, text: string) => {
+    const newNote = {
+      id: `n-${Date.now()}`,
+      author: 'Janai Desk',
+      timestamp: 'Just now',
+      text: text,
+    };
+
+    setLeads((prevLeads) =>
+      prevLeads.map((l) => {
+        if (l.id !== leadId) return l;
+        const updated = {
+          ...l,
+          notes: [newNote, ...l.notes],
+        };
+        if (selectedLead && selectedLead.id === leadId) {
+          setSelectedLead(updated);
+        }
+        return updated;
+      })
+    );
+  };
+
+  // Quick Action click from list row
+  const handleQuickAction = (lead: Lead, e: React.MouseEvent) => {
+    e.stopPropagation();
+
+    // Perform default stage progression
+    if (lead.stage === 'New') {
+      handleStageChange(lead.id, 'Contacted');
+    } else if (lead.stage === 'Contacted') {
+      handleStageChange(lead.id, 'Quote Sent');
+    } else if (lead.stage === 'Quote Sent') {
+      handleStageChange(lead.id, 'Confirmed');
+    } else if (lead.stage === 'Confirmed') {
+      handleStageChange(lead.id, 'Closed');
+    } else {
+      setSelectedLead(lead);
+    }
+  };
+
+  // Add new lead intake handler
+  const handleAddLead = (newLead: Lead) => {
+    setLeads((prev) => [newLead, ...prev]);
+    setSelectedLead(newLead);
+  };
+
+  // Filter leads by search query and stage tab
   const filteredLeads = useMemo(() => {
     return leads.filter((lead) => {
       const matchesStage = stageFilter === 'All' || lead.stage === stageFilter;
@@ -26,129 +136,13 @@ export const LeadsView: React.FC = () => {
         lead.customerName.toLowerCase().includes(q) ||
         lead.customerPhone.toLowerCase().includes(q) ||
         lead.serviceTitle.toLowerCase().includes(q) ||
+        lead.source.toLowerCase().includes(q) ||
         lead.assignee.toLowerCase().includes(q);
       return matchesStage && matchesSearch;
     });
   }, [leads, stageFilter, searchQuery]);
 
-  // Stage progression step logic
-  const advanceLeadStage = (lead: Lead) => {
-    let nextStage: LeadStage = lead.stage;
-    switch (lead.stage) {
-      case 'New': nextStage = 'Contacted'; break;
-      case 'Contacted': nextStage = 'Quote Sent'; break;
-      case 'Quote Sent': nextStage = 'Confirmed'; break;
-      case 'Confirmed': nextStage = 'Closed'; break;
-      case 'Closed': nextStage = 'Contacted'; break;
-      case 'Lost': nextStage = 'Contacted'; break;
-    }
-    handleUpdateStage(lead.id, nextStage);
-  };
-
-  // Stage update handler
-  const handleUpdateStage = (leadId: string, newStage: LeadStage) => {
-    const stageNoteText = `Stage updated to ${newStage}`;
-    const newNote = {
-      id: `n-${Date.now()}`,
-      author: 'System',
-      timestamp: 'Just now',
-      text: stageNoteText,
-    };
-    setLeads((prev) =>
-      prev.map((l) =>
-        l.id === leadId
-          ? { ...l, stage: newStage, notes: [newNote, ...l.notes] }
-          : l
-      )
-    );
-    if (selectedLead && selectedLead.id === leadId) {
-      setSelectedLead((prev) =>
-        prev
-          ? { ...prev, stage: newStage, notes: [newNote, ...prev.notes] }
-          : null
-      );
-    }
-  };
-
-  // Follow-up scheduling update handler
-  const handleUpdateFollowUp = (leadId: string, newFollowUp: string) => {
-    const scheduleNoteText = `Next follow-up scheduled for: ${newFollowUp}`;
-    const newNote = {
-      id: `n-${Date.now()}`,
-      author: 'Janai Desk',
-      timestamp: 'Just now',
-      text: scheduleNoteText,
-    };
-    setLeads((prev) =>
-      prev.map((l) =>
-        l.id === leadId
-          ? { ...l, nextFollowUp: newFollowUp, notes: [newNote, ...l.notes] }
-          : l
-      )
-    );
-    if (selectedLead && selectedLead.id === leadId) {
-      setSelectedLead((prev) =>
-        prev
-          ? { ...prev, nextFollowUp: newFollowUp, notes: [newNote, ...prev.notes] }
-          : null
-      );
-    }
-  };
-
-  // Quote amount & status update handler
-  const handleUpdateQuote = (leadId: string, amount: string, status: string) => {
-    const quoteNoteText = `Quote saved: ${amount} (${status})`;
-    const newNote = {
-      id: `n-${Date.now()}`,
-      author: 'Janai Desk',
-      timestamp: 'Just now',
-      text: quoteNoteText,
-    };
-    setLeads((prev) =>
-      prev.map((l) =>
-        l.id === leadId
-          ? {
-              ...l,
-              quoteAmount: amount,
-              quoteStatus: status,
-              notes: [newNote, ...l.notes],
-            }
-          : l
-      )
-    );
-    if (selectedLead && selectedLead.id === leadId) {
-      setSelectedLead((prev) =>
-        prev
-          ? {
-              ...prev,
-              quoteAmount: amount,
-              quoteStatus: status,
-              notes: [newNote, ...prev.notes],
-            }
-          : null
-      );
-    }
-  };
-
-  // Add note handler
-  const handleAddNote = (leadId: string, noteText: string) => {
-    const newNote = {
-      id: `n-${Date.now()}`,
-      author: 'Janai Desk',
-      timestamp: 'Just now',
-      text: noteText,
-    };
-    setLeads((prev) =>
-      prev.map((l) => (l.id === leadId ? { ...l, notes: [newNote, ...l.notes] } : l))
-    );
-    if (selectedLead && selectedLead.id === leadId) {
-      setSelectedLead((prev) =>
-        prev ? { ...prev, notes: [newNote, ...prev.notes] } : null
-      );
-    }
-  };
-
-  // Stage counts for tab badges
+  // Stage counts for pipeline filter tabs
   const getStageCount = (st: 'All' | LeadStage) => {
     if (st === 'All') return leads.length;
     return leads.filter((l) => l.stage === st).length;
@@ -168,18 +162,15 @@ export const LeadsView: React.FC = () => {
     <div>
       {/* Page Header */}
       <PageHeader
-        title="Leads Operations"
-        subline="Janai Tours & Service Ops • Operational lead progression & quote scheduling"
+        title="Leads & Inquiry Management"
+        subline="Janai Tours & Service Ops • List-first workflow for incoming service inquiries"
         simMode={simMode}
         onSimModeChange={setSimMode}
       />
 
-      {/* Pipeline Stage Summary Strip */}
-      <PipelineStrip stages={INITIAL_PIPELINE_STAGES} simMode={simMode} />
-
-      {/* Leads List Control Card */}
+      {/* Main Leads Control Card */}
       <Card dense className="rv-card--hero">
-        {/* Search & Filter Bar */}
+        {/* Search, Filter & New Inquiry Action Bar */}
         <div className="rv-leads-bar">
           {/* Search Input */}
           <div className="rv-search-wrapper">
@@ -187,7 +178,7 @@ export const LeadsView: React.FC = () => {
             <input
               type="text"
               className="rv-search-input"
-              placeholder="Search customer name, phone, package, or owner..."
+              placeholder="Search customer name, phone, trip service, source, or assignee..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
@@ -202,8 +193,18 @@ export const LeadsView: React.FC = () => {
             )}
           </div>
 
-          {/* Stage Filter Tabs */}
-          <div className="rv-queue-tabs" role="tablist" aria-label="Filter leads by stage">
+          {/* New Inquiry Action Button */}
+          <Button
+            variant="primary"
+            size="md"
+            onClick={() => setIsNewInquiryOpen(true)}
+            style={{ whiteSpace: 'nowrap' }}
+          >
+            ⚡ + New Inquiry
+          </Button>
+
+          {/* Stage Filter Pills */}
+          <div className="rv-queue-tabs" role="tablist" aria-label="Filter leads by pipeline stage">
             {STAGE_FILTERS.map((st) => (
               <button
                 key={st}
@@ -219,7 +220,7 @@ export const LeadsView: React.FC = () => {
           </div>
         </div>
 
-        {/* Leads Table / List */}
+        {/* Leads List / Table */}
         {simMode === 'loading' ? (
           <div>
             <SkeletonRow />
@@ -228,9 +229,9 @@ export const LeadsView: React.FC = () => {
           </div>
         ) : simMode === 'empty' || filteredLeads.length === 0 ? (
           <EmptyState
-            icon="🔎"
+            icon="📋"
             title="No leads match your filter"
-            description="Try clearing your search query or selecting a different pipeline stage tab."
+            description="Try clearing your search query or selecting a different stage tab."
           />
         ) : (
           <ul className="rv-queue-list" role="list">
@@ -239,21 +240,28 @@ export const LeadsView: React.FC = () => {
                 key={lead.id}
                 lead={lead}
                 onSelect={(selected) => setSelectedLead(selected)}
-                onQuickAction={(leadToAdvance) => advanceLeadStage(leadToAdvance)}
+                onQuickAction={handleQuickAction}
               />
             ))}
           </ul>
         )}
       </Card>
 
-      {/* Lead Detail Panel / Drawer */}
+      {/* Lead Detail Drawer */}
       <LeadDetailDrawer
         lead={selectedLead}
         onClose={() => setSelectedLead(null)}
-        onUpdateStage={handleUpdateStage}
-        onUpdateFollowUp={handleUpdateFollowUp}
+        onUpdateStage={handleStageChange}
+        onUpdateFollowUp={handleScheduleFollowUp}
         onUpdateQuote={handleUpdateQuote}
         onAddNote={handleAddNote}
+      />
+
+      {/* New Inquiry Intake Helper Modal */}
+      <NewInquiryModal
+        isOpen={isNewInquiryOpen}
+        onClose={() => setIsNewInquiryOpen(false)}
+        onAddLead={handleAddLead}
       />
     </div>
   );
