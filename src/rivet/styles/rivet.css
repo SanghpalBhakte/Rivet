@@ -931,3 +931,184 @@
   justify-content: space-between;
   margin-bottom: var(--rv-space-4);
 }
+
+/* --------------------------------------------------------------------------
+   Leads Module Component Styles
+   -------------------------------------------------------------------------- */
+.rv-leads-bar {
+  padding: var(--rv-space-3) var(--rv-space-4);
+  border-bottom: 1px solid var(--rv-border-subtle);
+  display: flex;
+  flex-direction: column;
+  gap: var(--rv-space-3);
+  background: var(--rv-bg-surface);
+}
+
+.rv-search-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+
+.rv-search-icon {
+  position: absolute;
+  left: 10px;
+  font-size: 12px;
+  color: var(--rv-text-muted);
+  pointer-events: none;
+}
+
+.rv-search-input {
+  width: 100%;
+  padding: 7px 30px 7px 30px;
+  background-color: var(--rv-bg-input);
+  border: 1px solid var(--rv-border-subtle);
+  border-radius: var(--rv-radius-md);
+  color: var(--rv-text-primary);
+  font-size: 13px;
+  transition: border-color 0.15s ease;
+}
+
+.rv-search-input:focus {
+  outline: none;
+  border-color: var(--rv-border-strong);
+}
+
+.rv-search-clear {
+  position: absolute;
+  right: 10px;
+  background: transparent;
+  border: none;
+  color: var(--rv-text-muted);
+  cursor: pointer;
+  font-size: 12px;
+  padding: 2px;
+}
+
+/* Lead Detail Drawer / Side Sheet */
+.rv-lead-drawer-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.65);
+  backdrop-filter: blur(2px);
+  z-index: 100;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.rv-lead-drawer {
+  width: 440px;
+  max-width: 100%;
+  height: 100%;
+  background: var(--rv-bg-surface);
+  border-left: 1px solid var(--rv-border-default);
+  display: flex;
+  flex-direction: column;
+  box-shadow: -10px 0 30px rgba(0, 0, 0, 0.5);
+  animation: rv-drawer-slide-right 0.2s ease-out;
+}
+
+@keyframes rv-drawer-slide-right {
+  from { transform: translateX(100%); }
+  to { transform: translateX(0); }
+}
+
+@media (max-width: 640px) {
+  .rv-lead-drawer-overlay {
+    align-items: flex-end;
+  }
+  .rv-lead-drawer {
+    width: 100%;
+    height: 85vh;
+    border-left: none;
+    border-top: 1px solid var(--rv-border-strong);
+    border-radius: 12px 12px 0 0;
+    animation: rv-drawer-slide-up 0.2s ease-out;
+  }
+  @keyframes rv-drawer-slide-up {
+    from { transform: translateY(100%); }
+    to { transform: translateY(0); }
+  }
+}
+
+.rv-lead-drawer__header {
+  padding: var(--rv-space-4);
+  border-bottom: 1px solid var(--rv-border-subtle);
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+}
+
+.rv-lead-drawer__body {
+  padding: var(--rv-space-4);
+  overflow-y: auto;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: var(--rv-space-4);
+}
+
+.rv-lead-drawer__section {
+  padding-bottom: var(--rv-space-4);
+  border-bottom: 1px solid var(--rv-border-subtle);
+}
+
+.rv-lead-drawer__label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--rv-text-muted);
+  display: block;
+}
+
+.rv-stage-pill {
+  background: var(--rv-bg-input);
+  border: 1px solid var(--rv-border-subtle);
+  color: var(--rv-text-secondary);
+  padding: 4px 10px;
+  border-radius: var(--rv-radius-sm);
+  font-size: 11px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.rv-stage-pill:hover {
+  color: var(--rv-text-primary);
+  background: var(--rv-bg-surface-hover);
+}
+
+.rv-stage-pill--active {
+  background: var(--rv-brand-bg);
+  color: var(--rv-text-primary);
+  border-color: var(--rv-brand-border);
+  font-weight: 600;
+}
+
+.rv-lead-note-input {
+  flex: 1;
+  background: var(--rv-bg-input);
+  border: 1px solid var(--rv-border-subtle);
+  border-radius: var(--rv-radius-md);
+  padding: 6px 10px;
+  color: var(--rv-text-primary);
+  font-size: 12px;
+}
+
+.rv-lead-note-input:focus {
+  outline: none;
+  border-color: var(--rv-border-strong);
+}
+
+.rv-lead-note-card {
+  background: var(--rv-bg-base);
+  border: 1px solid var(--rv-border-subtle);
+  padding: 8px 10px;
+  border-radius: var(--rv-radius-sm);
+}
+

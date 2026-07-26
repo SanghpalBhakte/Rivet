@@ -1,8 +1,22 @@
 import React, { useState } from 'react';
+import { ActiveModule } from '../../types/rivet';
 import { Button } from '../ui/Button';
 
-export const MobileNav: React.FC = () => {
+interface MobileNavProps {
+  activeTab?: ActiveModule;
+  onSelectTab?: (tab: ActiveModule) => void;
+}
+
+export const MobileNav: React.FC<MobileNavProps> = ({
+  activeTab = 'dashboard',
+  onSelectTab,
+}) => {
   const [isOpen, setIsOpen] = useState(false);
+
+  const handleSelect = (tab: ActiveModule) => {
+    if (onSelectTab) onSelectTab(tab);
+    setIsOpen(false);
+  };
 
   return (
     <>
@@ -41,10 +55,16 @@ export const MobileNav: React.FC = () => {
                 Operational Modules
               </span>
             </div>
-            <button className="rv-sidebar__link rv-sidebar__link--active" onClick={() => setIsOpen(false)}>
+            <button
+              className={`rv-sidebar__link ${activeTab === 'dashboard' ? 'rv-sidebar__link--active' : ''}`}
+              onClick={() => handleSelect('dashboard')}
+            >
               <span>Dashboard</span>
             </button>
-            <button className="rv-sidebar__link rv-sidebar__link--disabled" disabled aria-disabled="true">
+            <button
+              className={`rv-sidebar__link ${activeTab === 'leads' ? 'rv-sidebar__link--active' : ''}`}
+              onClick={() => handleSelect('leads')}
+            >
               <span>Leads</span>
             </button>
             <button className="rv-sidebar__link rv-sidebar__link--disabled" disabled aria-disabled="true">

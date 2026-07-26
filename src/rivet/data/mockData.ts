@@ -1,4 +1,4 @@
-import { QueueItem, SummaryMetric, ActivityItem, PipelineStage } from '../types/rivet';
+import { QueueItem, SummaryMetric, ActivityItem, PipelineStage, Lead } from '../types/rivet';
 
 export const INITIAL_QUEUE_ITEMS: QueueItem[] = [
   {
@@ -156,5 +156,149 @@ export const INITIAL_RECENT_ACTIVITIES: ActivityItem[] = [
     title: 'Job Completed',
     description: 'Outstation cab trip to Pachmarhi completed successfully',
     category: 'job',
+  },
+];
+
+/* --------------------------------------------------------------------------
+   Leads Module Mock Data
+   -------------------------------------------------------------------------- */
+export const INITIAL_LEADS: Lead[] = [
+  {
+    id: 'ld-501',
+    customerName: 'Rajesh Sharma',
+    customerPhone: '+91 98230 11452',
+    customerEmail: 'rajesh.sharma@example.com',
+    serviceTitle: 'Manali 5D/4N Customized Package',
+    source: 'WhatsApp',
+    stage: 'Quote Sent',
+    budget: '₹45,000',
+    nextFollowUp: 'Today, 4:00 PM',
+    assignee: 'Janai Desk',
+    createdAt: '2026-07-25',
+    primaryActionLabel: 'Send Reminder',
+    notes: [
+      {
+        id: 'n-1',
+        author: 'Janai Desk',
+        timestamp: 'Yesterday 4:30 PM',
+        text: 'Client requested 4-star hotel upgrade near Mall Road.',
+      },
+      {
+        id: 'n-2',
+        author: 'System',
+        timestamp: 'Jul 25, 2:00 PM',
+        text: 'Lead captured from WhatsApp Business bot.',
+      },
+    ],
+  },
+  {
+    id: 'ld-502',
+    customerName: 'Anil Kulkarni (SunTech)',
+    customerPhone: '+91 94221 88390',
+    customerEmail: 'anil.k@suntechcorp.com',
+    serviceTitle: 'Corporate Fleet Cab Monthly Retainer',
+    source: 'Phone Call',
+    stage: 'Contacted',
+    budget: '₹1,20,000 / mo',
+    nextFollowUp: 'Tomorrow, 11:00 AM',
+    assignee: 'Suresh M.',
+    createdAt: '2026-07-24',
+    primaryActionLabel: 'Prepare Contract',
+    notes: [
+      {
+        id: 'n-3',
+        author: 'Suresh M.',
+        timestamp: 'Jul 26, 11:30 AM',
+        text: 'Discussed 3 sedan vehicles for daily executive pickups in Nagpur IT Park.',
+      },
+    ],
+  },
+  {
+    id: 'ld-503',
+    customerName: 'Dr. Neha Verma',
+    customerPhone: '+91 97654 32109',
+    customerEmail: 'neha.verma@cityhospital.org',
+    serviceTitle: 'Leh-Ladakh 7-Day Group Flight Tour',
+    source: 'Referral',
+    stage: 'Quote Sent',
+    budget: '₹1,80,000',
+    nextFollowUp: 'Today, 2:30 PM',
+    assignee: 'Janai Desk',
+    createdAt: '2026-07-23',
+    primaryActionLabel: 'Confirm Flight',
+    notes: [
+      {
+        id: 'n-4',
+        author: 'Janai Desk',
+        timestamp: 'Jul 26, 6:00 PM',
+        text: 'Waiting for flight seat confirmation for group of 6 adults.',
+      },
+    ],
+  },
+  {
+    id: 'ld-504',
+    customerName: 'Sanjay Deshmukh',
+    customerPhone: '+91 99700 44512',
+    customerEmail: 'sanjay.deshmukh@gmail.com',
+    serviceTitle: 'Nagpur Airport Pickup & Drop Transfer',
+    source: 'Website',
+    stage: 'New',
+    budget: '₹3,500',
+    nextFollowUp: 'Today, 6:00 PM',
+    assignee: 'Unassigned',
+    createdAt: '2026-07-27',
+    primaryActionLabel: 'Assign & Call',
+    notes: [
+      {
+        id: 'n-5',
+        author: 'System',
+        timestamp: 'Today 8:15 AM',
+        text: 'Inquired about Ertiga vs Crysta rate difference.',
+      },
+    ],
+  },
+  {
+    id: 'ld-505',
+    customerName: 'Amitabh Joshi',
+    customerPhone: '+91 98901 77320',
+    customerEmail: 'amitabh.j@outlook.com',
+    serviceTitle: 'Tadoba Tiger Safari Permit & Resort Stay',
+    source: 'WhatsApp',
+    stage: 'Confirmed',
+    budget: '₹32,000',
+    nextFollowUp: 'Jul 29, 10:00 AM',
+    assignee: 'Suresh M.',
+    createdAt: '2026-07-22',
+    primaryActionLabel: 'Deliver Vouchers',
+    notes: [
+      {
+        id: 'n-6',
+        author: 'Suresh M.',
+        timestamp: 'Jul 25, 3:00 PM',
+        text: 'Safari permits booked for Kolara Gate morning slot.',
+      },
+    ],
+  },
+  {
+    id: 'ld-506',
+    customerName: 'Priya Mehta',
+    customerPhone: '+91 91588 22104',
+    customerEmail: 'priya.mehta@yahoo.com',
+    serviceTitle: 'Pachmarhi Hill Station Family Package',
+    source: 'Referral',
+    stage: 'Closed',
+    budget: '₹28,000',
+    nextFollowUp: 'Completed',
+    assignee: 'Janai Desk',
+    createdAt: '2026-07-20',
+    primaryActionLabel: 'View Invoice',
+    notes: [
+      {
+        id: 'n-7',
+        author: 'Janai Desk',
+        timestamp: 'Jul 24, 5:00 PM',
+        text: 'Full payment received via UPI. Booking closed successfully.',
+      },
+    ],
   },
 ];

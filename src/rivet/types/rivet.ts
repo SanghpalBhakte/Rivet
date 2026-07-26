@@ -48,3 +48,34 @@ export interface PipelineStage {
 }
 
 export type SimulationMode = 'normal' | 'loading' | 'empty' | 'error';
+
+/* --------------------------------------------------------------------------
+   Leads Module Types
+   -------------------------------------------------------------------------- */
+export type LeadStage = 'New' | 'Contacted' | 'Quote Sent' | 'Confirmed' | 'Closed' | 'Lost';
+export type LeadSource = 'WhatsApp' | 'Website' | 'Phone Call' | 'Referral';
+
+export interface LeadNote {
+  id: string;
+  author: string;
+  timestamp: string;
+  text: string;
+}
+
+export interface Lead {
+  id: string;
+  customerName: string;
+  customerPhone: string;
+  customerEmail: string;
+  serviceTitle: string;
+  source: LeadSource;
+  stage: LeadStage;
+  budget: string;
+  nextFollowUp: string;
+  assignee: string;
+  notes: LeadNote[];
+  createdAt: string;
+  primaryActionLabel: string;
+}
+
+export type ActiveModule = 'dashboard' | 'leads';

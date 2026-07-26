@@ -1,10 +1,15 @@
 import React from 'react';
+import { ActiveModule } from '../../types/rivet';
 
 interface SidebarProps {
-  activeTab?: string;
+  activeTab?: ActiveModule;
+  onSelectTab?: (tab: ActiveModule) => void;
 }
 
-export const Sidebar: React.FC<SidebarProps> = ({ activeTab = 'dashboard' }) => {
+export const Sidebar: React.FC<SidebarProps> = ({
+  activeTab = 'dashboard',
+  onSelectTab,
+}) => {
   return (
     <aside className="rv-sidebar" aria-label="Main Navigation">
       {/* Brand & Workspace */}
@@ -22,15 +27,16 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab = 'dashboard' }) => 
       <nav className="rv-sidebar__nav">
         <button
           className={`rv-sidebar__link ${activeTab === 'dashboard' ? 'rv-sidebar__link--active' : ''}`}
+          onClick={() => onSelectTab && onSelectTab('dashboard')}
           aria-current={activeTab === 'dashboard' ? 'page' : undefined}
         >
           <span>Dashboard</span>
         </button>
 
         <button
-          className="rv-sidebar__link rv-sidebar__link--disabled"
-          disabled
-          aria-disabled="true"
+          className={`rv-sidebar__link ${activeTab === 'leads' ? 'rv-sidebar__link--active' : ''}`}
+          onClick={() => onSelectTab && onSelectTab('leads')}
+          aria-current={activeTab === 'leads' ? 'page' : undefined}
         >
           <span>Leads</span>
         </button>
