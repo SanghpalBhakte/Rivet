@@ -146,4 +146,35 @@ export interface PaymentRecord {
   primaryActionLabel: string;
 }
 
-export type ActiveModule = 'dashboard' | 'leads' | 'jobs' | 'payments';
+/* --------------------------------------------------------------------------
+   Customers Module Types
+   -------------------------------------------------------------------------- */
+export type CustomerHealthStatus = 'Active Lead' | 'Job In Progress' | 'Payment Due' | 'Repeat Client';
+
+export interface CustomerHistoryItem {
+  id: string;
+  date: string;
+  type: 'lead' | 'job' | 'payment' | 'note';
+  title: string;
+  details: string;
+  badgeLabel?: string;
+}
+
+export interface CustomerRecord {
+  id: string;
+  customerCode: string;
+  name: string;
+  phone: string;
+  email: string;
+  city: string;
+  healthStatus: CustomerHealthStatus;
+  latestServiceRef: string;
+  lastActivityDate: string;
+  totalSpent: number;
+  outstandingBalance: number;
+  nextFollowUp: string;
+  history: CustomerHistoryItem[];
+  primaryActionLabel: string;
+}
+
+export type ActiveModule = 'dashboard' | 'leads' | 'jobs' | 'payments' | 'customers';
