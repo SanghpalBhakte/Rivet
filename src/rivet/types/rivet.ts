@@ -117,4 +117,33 @@ export interface Job {
   primaryActionLabel: string;
 }
 
-export type ActiveModule = 'dashboard' | 'leads' | 'jobs';
+/* --------------------------------------------------------------------------
+   Payments Module Types
+   -------------------------------------------------------------------------- */
+export type PaymentStatus = 'Paid' | 'Partial' | 'Due Soon' | 'Overdue';
+
+export interface PaymentNote {
+  id: string;
+  author: string;
+  timestamp: string;
+  text: string;
+}
+
+export interface PaymentRecord {
+  id: string;
+  paymentCode: string;
+  customerName: string;
+  customerPhone: string;
+  jobCode: string;
+  serviceTitle: string;
+  totalAmount: number;
+  amountPaid: number;
+  balanceDue: number;
+  dueDate: string;
+  paymentMethod: string;
+  status: PaymentStatus;
+  notes: PaymentNote[];
+  primaryActionLabel: string;
+}
+
+export type ActiveModule = 'dashboard' | 'leads' | 'jobs' | 'payments';

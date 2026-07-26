@@ -1,4 +1,4 @@
-import { QueueItem, SummaryMetric, ActivityItem, PipelineStage, Lead, Job } from '../types/rivet';
+import { QueueItem, SummaryMetric, ActivityItem, PipelineStage, Lead, Job, PaymentRecord } from '../types/rivet';
 
 export const INITIAL_QUEUE_ITEMS: QueueItem[] = [
   {
@@ -468,5 +468,126 @@ export const INITIAL_JOBS: Job[] = [
       },
     ],
     primaryActionLabel: 'View Work Order',
+  },
+];
+
+/* --------------------------------------------------------------------------
+   Payments Module Mock Data
+   -------------------------------------------------------------------------- */
+export const INITIAL_PAYMENTS: PaymentRecord[] = [
+  {
+    id: 'pay-801',
+    paymentCode: 'PAY-101',
+    customerName: 'Priya Mehta',
+    customerPhone: '+91 91588 22104',
+    jobCode: 'JOB-901',
+    serviceTitle: 'Nagpur Airport Pickup — Flight AI-441',
+    totalAmount: 4500,
+    amountPaid: 1500,
+    balanceDue: 3000,
+    dueDate: 'Today, 5:00 PM',
+    paymentMethod: 'UPI / Cash on Drop',
+    status: 'Due Soon',
+    primaryActionLabel: 'Record Payment',
+    notes: [
+      {
+        id: 'pn-1',
+        author: 'Janai Desk',
+        timestamp: 'Today 1:00 PM',
+        text: 'Advance ₹1,500 received via Google Pay UPI.',
+      },
+    ],
+  },
+  {
+    id: 'pay-802',
+    paymentCode: 'PAY-102',
+    customerName: 'Anil Kulkarni (SunTech)',
+    customerPhone: '+91 94221 88390',
+    jobCode: 'JOB-904',
+    serviceTitle: 'Corporate Fleet Cab Monthly Retainer',
+    totalAmount: 115000,
+    amountPaid: 50000,
+    balanceDue: 65000,
+    dueDate: 'Yesterday, 6:00 PM',
+    paymentMethod: 'Corporate Invoice',
+    status: 'Overdue',
+    primaryActionLabel: 'Record Payment',
+    notes: [
+      {
+        id: 'pn-2',
+        author: 'Suresh M.',
+        timestamp: 'Jul 25, 4:00 PM',
+        text: 'Invoice sent to SunTech accounts team for balance clearance.',
+      },
+    ],
+  },
+  {
+    id: 'pay-803',
+    paymentCode: 'PAY-103',
+    customerName: 'Amitabh Joshi',
+    customerPhone: '+91 98901 77320',
+    jobCode: 'JOB-902',
+    serviceTitle: 'Tadoba Tiger Safari Permit & Driver Transfer',
+    totalAmount: 32000,
+    amountPaid: 15000,
+    balanceDue: 17000,
+    dueDate: 'Jul 29, 2026',
+    paymentMethod: 'Bank Transfer / UPI',
+    status: 'Partial',
+    primaryActionLabel: 'Record Payment',
+    notes: [
+      {
+        id: 'pn-3',
+        author: 'Janai Desk',
+        timestamp: 'Jul 24, 11:00 AM',
+        text: 'Advance ₹15,000 received for safari permits booking.',
+      },
+    ],
+  },
+  {
+    id: 'pay-804',
+    paymentCode: 'PAY-104',
+    customerName: 'Rajesh Sharma',
+    customerPhone: '+91 98230 11452',
+    jobCode: 'JOB-903',
+    serviceTitle: 'Manali 5D/4N Package Outstation Dispatch',
+    totalAmount: 45000,
+    amountPaid: 20000,
+    balanceDue: 25000,
+    dueDate: 'Tomorrow, 10:00 AM',
+    paymentMethod: 'UPI Advance',
+    status: 'Due Soon',
+    primaryActionLabel: 'Record Payment',
+    notes: [
+      {
+        id: 'pn-4',
+        author: 'Janai Desk',
+        timestamp: 'Jul 25, 2:30 PM',
+        text: 'Booking advance ₹20,000 verified.',
+      },
+    ],
+  },
+  {
+    id: 'pay-805',
+    paymentCode: 'PAY-105',
+    customerName: 'Vikram Rao',
+    customerPhone: '+91 98220 55410',
+    jobCode: 'JOB-905',
+    serviceTitle: 'Pachmarhi Outstation Cab Trip Return',
+    totalAmount: 28000,
+    amountPaid: 28000,
+    balanceDue: 0,
+    dueDate: 'Completed',
+    paymentMethod: 'UPI Full Payment',
+    status: 'Paid',
+    primaryActionLabel: 'View Payment',
+    notes: [
+      {
+        id: 'pn-5',
+        author: 'Janai Desk',
+        timestamp: 'Jul 24, 5:00 PM',
+        text: 'Full payment ₹28,000 received via PhonePe UPI. Settled.',
+      },
+    ],
   },
 ];
