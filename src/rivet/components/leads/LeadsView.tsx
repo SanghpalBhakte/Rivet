@@ -31,13 +31,102 @@ export const LeadsView: React.FC = () => {
     });
   }, [leads, stageFilter, searchQuery]);
 
+  // Stage progression step logic
+  const advanceLeadStage = (lead: Lead) => {
+    let nextStage: LeadStage = lead.stage;
+    switch (lead.stage) {
+      case 'New': nextStage = 'Contacted'; break;
+      case 'Contacted': nextStage = 'Quote Sent'; break;
+      case 'Quote Sent': nextStage = 'Confirmed'; break;
+      case 'Confirmed': nextStage = 'Closed'; break;
+      case 'Closed': nextStage = 'Contacted'; break;
+      case 'Lost': nextStage = 'Contacted'; break;
+    }
+    handleUpdateStage(lead.id, nextStage);
+  };
+
   // Stage update handler
   const handleUpdateStage = (leadId: string, newStage: LeadStage) => {
+    const stageNoteText = `Stage updated to ${newStage}`;
+    const newNote = {
+      id: `n-${Date.now()}`,
+      author: 'System',
+      timestamp: 'Just now',
+      text: stageNoteText,
+    };
     setLeads((prev) =>
-      prev.map((l) => (l.id === leadId ? { ...l, stage: newStage } : l))
+      prev.map((l) =>
+        l.id === leadId
+          ? { ...l, stage: newStage, notes: [newNote, ...l.notes] }
+          : l
+      )
     );
     if (selectedLead && selectedLead.id === leadId) {
-      setSelectedLead((prev) => (prev ? { ...prev, stage: newStage } : null));
+      setSelectedLead((prev) =>
+        prev
+          ? { ...prev, stage: newStage, notes: [newNote, ...prev.notes] }
+          : null
+      );
+    }
+  };
+
+  // Follow-up scheduling update handler
+  const handleUpdateFollowUp = (leadId: string, newFollowUp: string) => {
+    const scheduleNoteText = `Next follow-up scheduled for: ${newFollowUp}`;
+    const newNote = {
+      id: `n-${Date.now()}`,
+      author: 'Janai Desk',
+      timestamp: 'Just now',
+      text: scheduleNoteText,
+    };
+    setLeads((prev) =>
+      prev.map((l) =>
+        l.id === leadId
+          ? { ...l, nextFollowUp: newFollowUp, notes: [newNote, ...l.notes] }
+          : l
+      )
+    );
+    if (selectedLead && selectedLead.id === leadId) {
+      setSelectedLead((prev) =>
+        prev
+          ? { ...prev, nextFollowUp: newFollowUp, notes: [newNote, ...prev.notes] }
+          : null
+      );
+    }
+  };
+
+  // Quote amount & status update handler
+  const handleUpdateQuote = (leadId: string, amount: string, status: string) => {
+    const quoteNoteText = `Quote saved: ${amount} (${status})`;
+    const newNote = {
+      id: `n-${Date.now()}`,
+      author: 'Janai Desk',
+      timestamp: 'Just now',
+      text: quoteNoteText,
+    };
+    setLeads((prev) =>
+      prev.map((l) =>
+        l.id === leadId
+          ? {
+              ...l,
+              quoteAmount: amount,
+              quoteStatus: status,
+              notes: [newNote, ...l.notes],
+            }
+          : l
+      )
+    );
+    if (selectedLead && selectedLead.id === leadId) {
+      setSelectedLead((prev) =>
+        prev
+          ? {
+              ...prev,
+              quoteAmount: amount,
+              quoteStatus: status,
+              notes: [newNote, ...prev.notes],
+            }
+          : null
+      );
     }
   };
 
@@ -79,8 +168,8 @@ export const LeadsView: React.FC = () => {
     <div>
       {/* Page Header */}
       <PageHeader
-        title="Leads Pipeline"
-        subline="Janai Tours & Service Ops • Active customer inquiries and booking quotes"
+        title="Leads Operations"
+        subline="Janai Tours & Service Ops • Operational lead progression & quote scheduling"
         simMode={simMode}
         onSimModeChange={setSimMode}
       />
@@ -98,7 +187,7 @@ export const LeadsView: React.FC = () => {
             <input
               type="text"
               className="rv-search-input"
-              placeholder="Search customer name, phone, service package..."
+              placeholder="Search customer name, phone, package, or owner..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
@@ -150,7 +239,7 @@ export const LeadsView: React.FC = () => {
                 key={lead.id}
                 lead={lead}
                 onSelect={(selected) => setSelectedLead(selected)}
-                onPrimaryAction={(selected) => setSelectedLead(selected)}
+                onQuickAction={(leadToAdvance) => advanceLeadStage(leadToAdvance)}
               />
             ))}
           </ul>
@@ -162,6 +251,8 @@ export const LeadsView: React.FC = () => {
         lead={selectedLead}
         onClose={() => setSelectedLead(null)}
         onUpdateStage={handleUpdateStage}
+        onUpdateFollowUp={handleUpdateFollowUp}
+        onUpdateQuote={handleUpdateQuote}
         onAddNote={handleAddNote}
       />
     </div>

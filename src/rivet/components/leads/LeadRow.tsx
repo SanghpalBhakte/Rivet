@@ -6,13 +6,13 @@ import { Button } from '../ui/Button';
 interface LeadRowProps {
   lead: Lead;
   onSelect: (lead: Lead) => void;
-  onPrimaryAction: (lead: Lead, e: React.MouseEvent) => void;
+  onQuickAction: (lead: Lead, e: React.MouseEvent) => void;
 }
 
 export const LeadRow: React.FC<LeadRowProps> = ({
   lead,
   onSelect,
-  onPrimaryAction,
+  onQuickAction,
 }) => {
   const getBadgeVariant = (stage: string) => {
     switch (stage) {
@@ -22,6 +22,19 @@ export const LeadRow: React.FC<LeadRowProps> = ({
       case 'Confirmed': return 'job';
       case 'Closed': return 'completed';
       default: return 'neutral';
+    }
+  };
+
+  // Determine stage-based action CTA label
+  const getStageActionLabel = (stage: string) => {
+    switch (stage) {
+      case 'New': return 'Mark Contacted';
+      case 'Contacted': return 'Send Quote';
+      case 'Quote Sent': return 'Mark Confirmed';
+      case 'Confirmed': return 'Mark Closed';
+      case 'Closed': return 'Reopen Lead';
+      case 'Lost': return 'Reopen Lead';
+      default: return 'Advance Stage';
     }
   };
 
@@ -48,12 +61,19 @@ export const LeadRow: React.FC<LeadRowProps> = ({
           {lead.serviceTitle}
         </h4>
 
-        <div className="rv-queue-item__context">
-          Budget: <span className="rv-tabular" style={{ color: 'var(--rv-text-secondary)', fontWeight: 500 }}>{lead.budget}</span> • Owner: {lead.assignee}
+        {/* Scannable Quote Status & Budget */}
+        <div className="rv-queue-item__context" style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+          <span>Budget: <strong className="rv-num" style={{ color: 'var(--rv-text-secondary)' }}>{lead.budget}</strong></span>
+          {lead.quoteStatus && (
+            <span style={{ color: lead.stage === 'Quote Sent' ? 'var(--rv-status-overdue-text)' : 'var(--rv-text-muted)' }}>
+              • {lead.quoteStatus}
+            </span>
+          )}
+          <span>• Owner: {lead.assignee}</span>
         </div>
       </div>
 
-      {/* Schedule & Action CTA */}
+      {/* Schedule & Compact Quick Action CTA */}
       <div className="rv-queue-item__right">
         <div className="rv-queue-item__due">
           <div style={{ fontSize: '10px', color: 'var(--rv-text-muted)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
@@ -69,10 +89,11 @@ export const LeadRow: React.FC<LeadRowProps> = ({
           size="sm"
           onClick={(e) => {
             e.stopPropagation();
-            onPrimaryAction(lead, e);
+            onQuickAction(lead, e);
           }}
+          title={`Action for stage ${lead.stage}`}
         >
-          {lead.primaryActionLabel}
+          {getStageActionLabel(lead.stage)}
         </Button>
       </div>
     </li>

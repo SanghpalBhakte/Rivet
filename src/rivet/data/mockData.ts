@@ -160,7 +160,7 @@ export const INITIAL_RECENT_ACTIVITIES: ActivityItem[] = [
 ];
 
 /* --------------------------------------------------------------------------
-   Leads Module Mock Data
+   Leads Module Mock Data (Enhanced Quote Status & Actions)
    -------------------------------------------------------------------------- */
 export const INITIAL_LEADS: Lead[] = [
   {
@@ -172,10 +172,12 @@ export const INITIAL_LEADS: Lead[] = [
     source: 'WhatsApp',
     stage: 'Quote Sent',
     budget: '₹45,000',
+    quoteAmount: '₹45,000',
+    quoteStatus: 'Quote #JN-892 Sent (Pending Client)',
     nextFollowUp: 'Today, 4:00 PM',
     assignee: 'Janai Desk',
     createdAt: '2026-07-25',
-    primaryActionLabel: 'Send Reminder',
+    primaryActionLabel: 'Mark Confirmed',
     notes: [
       {
         id: 'n-1',
@@ -200,10 +202,12 @@ export const INITIAL_LEADS: Lead[] = [
     source: 'Phone Call',
     stage: 'Contacted',
     budget: '₹1,20,000 / mo',
+    quoteAmount: '₹1,15,000 / mo',
+    quoteStatus: 'Drafting Contract Terms',
     nextFollowUp: 'Tomorrow, 11:00 AM',
     assignee: 'Suresh M.',
     createdAt: '2026-07-24',
-    primaryActionLabel: 'Prepare Contract',
+    primaryActionLabel: 'Send Quote',
     notes: [
       {
         id: 'n-3',
@@ -222,10 +226,12 @@ export const INITIAL_LEADS: Lead[] = [
     source: 'Referral',
     stage: 'Quote Sent',
     budget: '₹1,80,000',
+    quoteAmount: '₹1,75,000',
+    quoteStatus: 'Quote #JN-904 Sent (Seats Held)',
     nextFollowUp: 'Today, 2:30 PM',
     assignee: 'Janai Desk',
     createdAt: '2026-07-23',
-    primaryActionLabel: 'Confirm Flight',
+    primaryActionLabel: 'Mark Confirmed',
     notes: [
       {
         id: 'n-4',
@@ -244,10 +250,11 @@ export const INITIAL_LEADS: Lead[] = [
     source: 'Website',
     stage: 'New',
     budget: '₹3,500',
+    quoteStatus: 'Not Sent',
     nextFollowUp: 'Today, 6:00 PM',
     assignee: 'Unassigned',
     createdAt: '2026-07-27',
-    primaryActionLabel: 'Assign & Call',
+    primaryActionLabel: 'Mark Contacted',
     notes: [
       {
         id: 'n-5',
@@ -266,10 +273,12 @@ export const INITIAL_LEADS: Lead[] = [
     source: 'WhatsApp',
     stage: 'Confirmed',
     budget: '₹32,000',
+    quoteAmount: '₹32,000',
+    quoteStatus: 'Booking Confirmed (Advance Received)',
     nextFollowUp: 'Jul 29, 10:00 AM',
     assignee: 'Suresh M.',
     createdAt: '2026-07-22',
-    primaryActionLabel: 'Deliver Vouchers',
+    primaryActionLabel: 'Close & Archive',
     notes: [
       {
         id: 'n-6',
@@ -288,10 +297,12 @@ export const INITIAL_LEADS: Lead[] = [
     source: 'Referral',
     stage: 'Closed',
     budget: '₹28,000',
+    quoteAmount: '₹28,000',
+    quoteStatus: 'Closed (Full Payment Received)',
     nextFollowUp: 'Completed',
     assignee: 'Janai Desk',
     createdAt: '2026-07-20',
-    primaryActionLabel: 'View Invoice',
+    primaryActionLabel: 'Reopen Lead',
     notes: [
       {
         id: 'n-7',

@@ -71,6 +71,8 @@ export interface Lead {
   source: LeadSource;
   stage: LeadStage;
   budget: string;
+  quoteAmount?: string;
+  quoteStatus?: string;
   nextFollowUp: string;
   assignee: string;
   notes: LeadNote[];
