@@ -80,4 +80,41 @@ export interface Lead {
   primaryActionLabel: string;
 }
 
-export type ActiveModule = 'dashboard' | 'leads';
+/* --------------------------------------------------------------------------
+   Jobs Module Types
+   -------------------------------------------------------------------------- */
+export type JobStatus = 'Scheduled' | 'In Progress' | 'Completed' | 'Cancelled';
+
+export interface JobNote {
+  id: string;
+  author: string;
+  timestamp: string;
+  text: string;
+}
+
+export interface PaymentSnapshot {
+  totalAmount: string;
+  advancePaid: string;
+  dueAmount: string;
+  paymentMethod: string;
+  status: 'Pending' | 'Partial' | 'Paid';
+}
+
+export interface Job {
+  id: string;
+  jobCode: string;
+  customerName: string;
+  customerPhone: string;
+  serviceTitle: string;
+  scheduledDateTime: string;
+  status: JobStatus;
+  driverName: string;
+  vehicleDetails: string;
+  pickupLocation: string;
+  dropLocation: string;
+  payment: PaymentSnapshot;
+  notes: JobNote[];
+  primaryActionLabel: string;
+}
+
+export type ActiveModule = 'dashboard' | 'leads' | 'jobs';

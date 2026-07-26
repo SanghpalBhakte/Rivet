@@ -1,4 +1,4 @@
-import { QueueItem, SummaryMetric, ActivityItem, PipelineStage, Lead } from '../types/rivet';
+import { QueueItem, SummaryMetric, ActivityItem, PipelineStage, Lead, Job } from '../types/rivet';
 
 export const INITIAL_QUEUE_ITEMS: QueueItem[] = [
   {
@@ -160,7 +160,7 @@ export const INITIAL_RECENT_ACTIVITIES: ActivityItem[] = [
 ];
 
 /* --------------------------------------------------------------------------
-   Leads Module Mock Data (Enhanced Quote Status & Actions)
+   Leads Module Mock Data
    -------------------------------------------------------------------------- */
 export const INITIAL_LEADS: Lead[] = [
   {
@@ -311,5 +311,162 @@ export const INITIAL_LEADS: Lead[] = [
         text: 'Full payment received via UPI. Booking closed successfully.',
       },
     ],
+  },
+];
+
+/* --------------------------------------------------------------------------
+   Jobs Module Mock Data
+   -------------------------------------------------------------------------- */
+export const INITIAL_JOBS: Job[] = [
+  {
+    id: 'jb-701',
+    jobCode: 'JOB-901',
+    customerName: 'Priya Mehta',
+    customerPhone: '+91 91588 22104',
+    serviceTitle: 'Nagpur Airport Pickup — Flight AI-441',
+    scheduledDateTime: 'Today, 5:00 PM',
+    status: 'In Progress',
+    driverName: 'Suresh M.',
+    vehicleDetails: 'Innova Crysta (MH-31-FA-4412)',
+    pickupLocation: 'Nagpur Airport Terminal 1',
+    dropLocation: 'Radisson Blu Hotel, Wardha Rd',
+    payment: {
+      totalAmount: '₹4,500',
+      advancePaid: '₹1,500',
+      dueAmount: '₹3,000',
+      paymentMethod: 'UPI / Cash on Drop',
+      status: 'Partial',
+    },
+    notes: [
+      {
+        id: 'jn-1',
+        author: 'Suresh M.',
+        timestamp: '4:45 PM',
+        text: 'Driver arrived at airport parking bay 4. Waiting for passenger landing.',
+      },
+      {
+        id: 'jn-2',
+        author: 'Janai Ops',
+        timestamp: '3:30 PM',
+        text: 'Flight AI-441 delayed by 15 mins. Driver notified.',
+      },
+    ],
+    primaryActionLabel: 'Mark Completed',
+  },
+  {
+    id: 'jb-702',
+    jobCode: 'JOB-902',
+    customerName: 'Amitabh Joshi',
+    customerPhone: '+91 98901 77320',
+    serviceTitle: 'Tadoba Tiger Safari Permit & Driver Transfer',
+    scheduledDateTime: 'Today, 7:00 PM',
+    status: 'Scheduled',
+    driverName: 'Ramesh P.',
+    vehicleDetails: 'Maruti Ertiga (MH-31-EQ-9812)',
+    pickupLocation: 'Dharampeth, Nagpur',
+    dropLocation: 'Kolara Gate Resort, Tadoba',
+    payment: {
+      totalAmount: '₹32,000',
+      advancePaid: '₹15,000',
+      dueAmount: '₹17,000',
+      paymentMethod: 'Bank Transfer / UPI',
+      status: 'Partial',
+    },
+    notes: [
+      {
+        id: 'jn-3',
+        author: 'Janai Ops',
+        timestamp: 'Today 11:00 AM',
+        text: 'Safari physical vouchers printed and handed to driver Ramesh.',
+      },
+    ],
+    primaryActionLabel: 'Dispatch Vehicle',
+  },
+  {
+    id: 'jb-703',
+    jobCode: 'JOB-903',
+    customerName: 'Rajesh Sharma',
+    customerPhone: '+91 98230 11452',
+    serviceTitle: 'Manali 5D/4N Package Outstation Dispatch',
+    scheduledDateTime: 'Tomorrow, 6:00 AM',
+    status: 'Scheduled',
+    driverName: 'Vikram Singh',
+    vehicleDetails: 'Tempo Traveller 12-Seater (MH-31-AB-1008)',
+    pickupLocation: 'Nagpur Railway Station Gate 1',
+    dropLocation: 'Manali Mall Road Hotel',
+    payment: {
+      totalAmount: '₹45,000',
+      advancePaid: '₹20,000',
+      dueAmount: '₹25,000',
+      paymentMethod: 'UPI Advance',
+      status: 'Partial',
+    },
+    notes: [
+      {
+        id: 'jn-4',
+        author: 'Janai Ops',
+        timestamp: 'Jul 26, 5:00 PM',
+        text: 'Hotel booking voucher JN-892 attached to work order.',
+      },
+    ],
+    primaryActionLabel: 'Dispatch Vehicle',
+  },
+  {
+    id: 'jb-704',
+    jobCode: 'JOB-904',
+    customerName: 'Anil Kulkarni (SunTech)',
+    customerPhone: '+91 94221 88390',
+    serviceTitle: 'Corporate Fleet Executive Retainer Pickup',
+    scheduledDateTime: 'Daily, 9:00 AM',
+    status: 'In Progress',
+    driverName: 'Vinod K.',
+    vehicleDetails: 'Swift Dzire (MH-31-CS-7721)',
+    pickupLocation: 'Civil Lines, Nagpur',
+    dropLocation: 'IT Park Phase 2, Nagpur',
+    payment: {
+      totalAmount: '₹1,15,000 / mo',
+      advancePaid: '₹50,000',
+      dueAmount: '₹65,000',
+      paymentMethod: 'Corporate Invoice',
+      status: 'Partial',
+    },
+    notes: [
+      {
+        id: 'jn-5',
+        author: 'Vinod K.',
+        timestamp: 'Today 9:05 AM',
+        text: 'Morning pickup completed for SunTech VP.',
+      },
+    ],
+    primaryActionLabel: 'Mark Completed',
+  },
+  {
+    id: 'jb-705',
+    jobCode: 'JOB-905',
+    customerName: 'Vikram Rao',
+    customerPhone: '+91 98220 55410',
+    serviceTitle: 'Pachmarhi Outstation Cab Trip Return',
+    scheduledDateTime: 'Yesterday, 8:00 PM',
+    status: 'Completed',
+    driverName: 'Suresh M.',
+    vehicleDetails: 'Innova Crysta (MH-31-FA-4412)',
+    pickupLocation: 'Pachmarhi Hill Resort',
+    dropLocation: 'Nagpur City Center',
+    payment: {
+      totalAmount: '₹28,000',
+      advancePaid: '₹28,000',
+      dueAmount: '₹0',
+      paymentMethod: 'UPI Full Payment',
+      status: 'Paid',
+    },
+    notes: [
+      {
+        id: 'jn-6',
+        author: 'Janai Ops',
+        timestamp: 'Jul 26, 8:30 PM',
+        text: 'Outstation trip completed. Total distance 680 km logged.',
+      },
+    ],
+    primaryActionLabel: 'View Work Order',
   },
 ];

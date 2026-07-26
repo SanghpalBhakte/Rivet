@@ -67,11 +67,14 @@ export const MobileNav: React.FC<MobileNavProps> = ({
             >
               <span>Leads</span>
             </button>
-            <button className="rv-sidebar__link rv-sidebar__link--disabled" disabled aria-disabled="true">
-              <span>Customers</span>
+            <button
+              className={`rv-sidebar__link ${activeTab === 'jobs' ? 'rv-sidebar__link--active' : ''}`}
+              onClick={() => handleSelect('jobs')}
+            >
+              <span>Jobs</span>
             </button>
             <button className="rv-sidebar__link rv-sidebar__link--disabled" disabled aria-disabled="true">
-              <span>Jobs</span>
+              <span>Customers</span>
             </button>
             <button className="rv-sidebar__link rv-sidebar__link--disabled" disabled aria-disabled="true">
               <span>Payments</span>

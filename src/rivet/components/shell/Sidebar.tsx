@@ -42,11 +42,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </button>
 
         <button
-          className="rv-sidebar__link rv-sidebar__link--disabled"
-          disabled
-          aria-disabled="true"
+          className={`rv-sidebar__link ${activeTab === 'jobs' ? 'rv-sidebar__link--active' : ''}`}
+          onClick={() => onSelectTab && onSelectTab('jobs')}
+          aria-current={activeTab === 'jobs' ? 'page' : undefined}
         >
-          <span>Customers</span>
+          <span>Jobs</span>
         </button>
 
         <button
@@ -54,7 +54,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           disabled
           aria-disabled="true"
         >
-          <span>Jobs</span>
+          <span>Customers</span>
         </button>
 
         <button
