@@ -177,4 +177,26 @@ export interface CustomerRecord {
   primaryActionLabel: string;
 }
 
-export type ActiveModule = 'dashboard' | 'leads' | 'jobs' | 'payments' | 'customers';
+/* --------------------------------------------------------------------------
+   Tasks & Reminders Module Types
+   -------------------------------------------------------------------------- */
+export type TaskStatus = 'Open' | 'Due Soon' | 'Overdue' | 'Done';
+export type TaskType = 'Callback' | 'Quote Follow-up' | 'Payment Reminder' | 'Dispatch Follow-up' | 'Send Note' | 'General';
+export type TaskPriority = 'Critical' | 'High' | 'Normal';
+export type LinkedEntityType = 'Lead' | 'Job' | 'Payment' | 'Customer';
+
+export interface TaskRecord {
+  id: string;
+  title: string;
+  type: TaskType;
+  status: TaskStatus;
+  priority: TaskPriority;
+  dueDateTime: string;
+  assignee: string;
+  linkedEntityId?: string;
+  linkedEntityType?: LinkedEntityType;
+  linkedEntityName?: string;
+  notes?: string;
+}
+
+export type ActiveModule = 'dashboard' | 'leads' | 'jobs' | 'payments' | 'customers' | 'tasks';

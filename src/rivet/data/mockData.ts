@@ -770,3 +770,61 @@ export const INITIAL_CUSTOMERS: CustomerRecord[] = [
     ],
   },
 ];
+
+/* --------------------------------------------------------------------------
+   Mock Tasks & Reminders
+   -------------------------------------------------------------------------- */
+import { TaskRecord } from '../types/rivet';
+
+export const INITIAL_TASKS: TaskRecord[] = [
+  {
+    id: 'tsk-001',
+    title: 'Call back for contract negotiation',
+    type: 'Callback',
+    status: 'Overdue',
+    priority: 'Critical',
+    dueDateTime: 'Today, 11:00 AM',
+    assignee: 'Suresh M.',
+    linkedEntityId: 'ld-502',
+    linkedEntityType: 'Lead',
+    linkedEntityName: 'Anil Kapoor (Corporate Fleet)',
+    notes: 'Needs final discussion on 3 sedan monthly pricing.',
+  },
+  {
+    id: 'tsk-002',
+    title: 'Confirm flight seats',
+    type: 'Quote Follow-up',
+    status: 'Due Soon',
+    priority: 'High',
+    dueDateTime: 'Today, 4:00 PM',
+    assignee: 'Janai Desk',
+    linkedEntityId: 'ld-503',
+    linkedEntityType: 'Lead',
+    linkedEntityName: 'Dr. Neha Verma (Leh-Ladakh 7D)',
+    notes: 'Checking Indigo group block availability.',
+  },
+  {
+    id: 'tsk-003',
+    title: 'Collect pending ₹15,000 advance',
+    type: 'Payment Reminder',
+    status: 'Open',
+    priority: 'Normal',
+    dueDateTime: 'Tomorrow, 10:00 AM',
+    assignee: 'Accounts',
+    linkedEntityId: 'job-903',
+    linkedEntityType: 'Job',
+    linkedEntityName: 'Sanjay Deshmukh (Ashtavinayak Tour)',
+  },
+  {
+    id: 'tsk-004',
+    title: 'Send WhatsApp itinerary PDF',
+    type: 'Send Note',
+    status: 'Done',
+    priority: 'Normal',
+    dueDateTime: 'Yesterday, 2:00 PM',
+    assignee: 'Janai Desk',
+    linkedEntityId: 'cust-901',
+    linkedEntityType: 'Customer',
+    linkedEntityName: 'Priya Mehta',
+  }
+];
