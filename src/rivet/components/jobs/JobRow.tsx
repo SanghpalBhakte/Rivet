@@ -26,10 +26,10 @@ export const JobRow: React.FC<JobRowProps> = ({
 
   const getActionLabel = (status: string) => {
     switch (status) {
-      case 'Scheduled': return 'Dispatch Vehicle';
-      case 'In Progress': return 'Mark Completed';
-      case 'Completed': return 'View Work Order';
-      case 'Cancelled': return 'Reopen Job';
+      case 'Scheduled': return '🚗 Dispatch Vehicle';
+      case 'In Progress': return '✓ Mark Completed';
+      case 'Completed': return '📄 View Work Order';
+      case 'Cancelled': return '🔄 Reopen Job';
       default: return 'View Details';
     }
   };
@@ -38,55 +38,76 @@ export const JobRow: React.FC<JobRowProps> = ({
     <li
       className="rv-queue-item rv-job-row"
       onClick={() => onSelect(job)}
-      style={{ cursor: 'pointer' }}
+      style={{
+        cursor: 'pointer',
+        padding: '12px 16px',
+        background: 'var(--rv-bg-surface)',
+        border: '1px solid var(--rv-border-subtle)',
+        borderRadius: 'var(--rv-radius-md)',
+        marginBottom: '6px',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '8px',
+      }}
     >
-      {/* Work Order Info */}
-      <div className="rv-queue-item__main">
-        <div className="rv-queue-item__meta-row">
+      {/* Top Identity & Status Row */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           <Badge variant={getBadgeVariant(job.status)}>
             {job.status.toUpperCase()}
           </Badge>
           <span className="rv-tabular" style={{ fontSize: '11px', color: 'var(--rv-text-muted)', fontWeight: 600 }}>
             {job.jobCode}
           </span>
-          <span className="rv-queue-item__client">{job.customerName}</span>
-          <span className="rv-queue-item__phone rv-tabular">{job.customerPhone}</span>
+          <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--rv-text-primary)' }}>
+            {job.customerName}
+          </span>
+          <span className="rv-tabular" style={{ fontSize: '11px', color: 'var(--rv-text-dim)' }}>
+            ({job.customerPhone})
+          </span>
         </div>
 
-        <h4 className="rv-queue-item__title" style={{ fontWeight: 600, color: 'var(--rv-text-primary)' }}>
-          {job.serviceTitle}
-        </h4>
-
-        {/* Dispatch & Payment Snapshot Info */}
-        <div className="rv-queue-item__context" style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
-          <span>Driver: <strong style={{ color: 'var(--rv-text-secondary)' }}>{job.driverName}</strong></span>
-          <span>• Vehicle: {job.vehicleDetails}</span>
-          <span>• Due: <strong className="rv-num" style={{ color: job.payment.dueAmount !== '₹0' ? 'var(--rv-status-overdue-text)' : 'var(--rv-text-muted)' }}>{job.payment.dueAmount}</strong></span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <div className="rv-num" style={{ fontSize: '12px', fontWeight: 600, color: 'var(--rv-text-primary)' }}>
+            {job.scheduledDateTime}
+          </div>
+          <Button
+            variant={job.status === 'In Progress' ? 'primary' : 'secondary'}
+            size="sm"
+            onClick={(e) => {
+              e.stopPropagation();
+              onQuickAction(job, e);
+            }}
+          >
+            {getActionLabel(job.status)}
+          </Button>
         </div>
       </div>
 
-      {/* Schedule & Action CTA */}
-      <div className="rv-queue-item__right">
-        <div className="rv-queue-item__due">
-          <div style={{ fontSize: '10px', color: 'var(--rv-text-muted)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-            Scheduled Time
-          </div>
-          <div className="rv-tabular" style={{ fontWeight: 500 }}>
-            {job.scheduledDateTime}
+      {/* Middle Service & Route Row */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px', borderTop: '1px dashed var(--rv-border-subtle)', paddingTop: '6px' }}>
+        <div style={{ flex: 1, minWidth: '240px' }}>
+          <h4 style={{ margin: '0 0 2px 0', fontSize: '13px', fontWeight: 600, color: 'var(--rv-text-primary)' }}>
+            {job.serviceTitle}
+          </h4>
+          <div style={{ fontSize: '11px', color: 'var(--rv-text-secondary)', display: 'flex', gap: '6px', alignItems: 'center' }}>
+            <span>📍 <strong>{job.pickupLocation}</strong></span>
+            <span>➔</span>
+            <span>🏁 <strong>{job.dropLocation}</strong></span>
           </div>
         </div>
 
-        <Button
-          variant={job.status === 'In Progress' ? 'primary' : 'secondary'}
-          size="sm"
-          onClick={(e) => {
-            e.stopPropagation();
-            onQuickAction(job, e);
-          }}
-        >
-          {getActionLabel(job.status)}
-        </Button>
+        {/* Driver, Vehicle & Payment Snapshot */}
+        <div style={{ display: 'flex', gap: '16px', fontSize: '11px', color: 'var(--rv-text-muted)', alignItems: 'center' }}>
+          <div>
+            Driver: <strong style={{ color: 'var(--rv-text-primary)' }}>{job.driverName}</strong> ({job.vehicleDetails})
+          </div>
+          <div>
+            Balance: <strong className="rv-num" style={{ color: job.payment.dueAmount !== '₹0' ? 'var(--rv-status-overdue-text)' : 'var(--rv-status-completed-text)' }}>{job.payment.dueAmount}</strong>
+          </div>
+        </div>
       </div>
     </li>
   );
 };
+

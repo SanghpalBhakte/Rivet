@@ -109,6 +109,83 @@ export const JobsView: React.FC = () => {
         onSimModeChange={setSimMode}
       />
 
+      {/* Top Counters Strip for Jobs V2 */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '10px', marginBottom: '16px' }}>
+        <div style={{ background: 'var(--rv-bg-surface)', border: '1px solid var(--rv-border-default)', padding: '10px 14px', borderRadius: '6px' }}>
+          <div style={{ fontSize: '10px', color: 'var(--rv-text-muted)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+            Total Work Orders
+          </div>
+          <div className="rv-num" style={{ fontSize: '18px', fontWeight: 700, color: 'var(--rv-text-primary)', marginTop: '2px' }}>
+            {jobs.length}
+          </div>
+        </div>
+
+        <div style={{ background: 'var(--rv-bg-surface)', border: '1px solid var(--rv-border-default)', padding: '10px 14px', borderRadius: '6px' }}>
+          <div style={{ fontSize: '10px', color: 'var(--rv-text-muted)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+            Scheduled
+          </div>
+          <div className="rv-num" style={{ fontSize: '18px', fontWeight: 700, color: 'var(--rv-status-callback-text)', marginTop: '2px' }}>
+            {getStatusCount('Scheduled')}
+          </div>
+        </div>
+
+        <div style={{ background: 'var(--rv-bg-surface)', border: '1px solid var(--rv-border-default)', padding: '10px 14px', borderRadius: '6px' }}>
+          <div style={{ fontSize: '10px', color: 'var(--rv-text-muted)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+            In Progress
+          </div>
+          <div className="rv-num" style={{ fontSize: '18px', fontWeight: 700, color: 'var(--rv-status-job-text)', marginTop: '2px' }}>
+            {getStatusCount('In Progress')}
+          </div>
+        </div>
+
+        <div style={{ background: 'var(--rv-bg-surface)', border: '1px solid var(--rv-border-default)', padding: '10px 14px', borderRadius: '6px' }}>
+          <div style={{ fontSize: '10px', color: 'var(--rv-text-muted)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+            Completed
+          </div>
+          <div className="rv-num" style={{ fontSize: '18px', fontWeight: 700, color: 'var(--rv-status-completed-text)', marginTop: '2px' }}>
+            {getStatusCount('Completed')}
+          </div>
+        </div>
+
+        <div style={{ background: 'var(--rv-bg-surface)', border: '1px solid var(--rv-border-default)', padding: '10px 14px', borderRadius: '6px' }}>
+          <div style={{ fontSize: '10px', color: 'var(--rv-text-muted)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+            Cancelled
+          </div>
+          <div className="rv-num" style={{ fontSize: '18px', fontWeight: 700, color: 'var(--rv-status-overdue-text)', marginTop: '2px' }}>
+            {getStatusCount('Cancelled')}
+          </div>
+        </div>
+      </div>
+
+      {/* Exception & Dispatch Alert Area */}
+      {getStatusCount('Scheduled') > 0 && (
+        <div
+          style={{
+            background: 'var(--rv-bg-surface-elevated)',
+            border: '1px solid var(--rv-status-callback-border)',
+            borderLeft: '3px solid var(--rv-status-callback-text)',
+            padding: '10px 14px',
+            borderRadius: '6px',
+            marginBottom: '16px',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            flexWrap: 'wrap',
+            gap: '8px',
+          }}
+        >
+          <div style={{ fontSize: '12px' }}>
+            <strong style={{ color: 'var(--rv-status-callback-text)' }}>⚡ Active Dispatch Alert:</strong>{' '}
+            <span style={{ color: 'var(--rv-text-primary)' }}>
+              {getStatusCount('Scheduled')} vehicle dispatches awaiting departure confirmation for today's pickup schedule.
+            </span>
+          </div>
+          <span style={{ fontSize: '11px', color: 'var(--rv-text-muted)', fontWeight: 600 }}>
+            Desk Operator: Central HQ Dispatch
+          </span>
+        </div>
+      )}
+
       {/* Main Jobs Control Card */}
       <Card dense className="rv-card--hero">
         {/* Search & Filter Bar */}
@@ -165,7 +242,7 @@ export const JobsView: React.FC = () => {
             description="Try clearing your search query or selecting a different status tab."
           />
         ) : (
-          <ul className="rv-queue-list" role="list">
+          <ul className="rv-queue-list" role="list" style={{ background: 'transparent' }}>
             {filteredJobs.map((job) => (
               <JobRow
                 key={job.id}
