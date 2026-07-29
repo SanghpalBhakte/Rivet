@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { INITIAL_CUSTOMERS, INITIAL_LEADS, INITIAL_JOBS, INITIAL_PAYMENTS, INITIAL_TASKS } from '../../data/mockData';
 import { CustomerRecord, CustomerHealthStatus, SimulationMode, Lead, Job, PaymentRecord, TaskRecord, LeadStage, JobStatus, PaymentStatus } from '../../types/rivet';
 import { PageHeader } from '../ui/PageHeader';
@@ -7,6 +7,7 @@ import { EmptyState } from '../ui/EmptyState';
 import { SkeletonRow } from '../ui/Skeleton';
 import { CustomerRow } from './CustomerRow';
 import { CustomerAccountView } from './CustomerAccountView';
+import { ApiService } from '../../services/api';
 
 export const CustomersView: React.FC = () => {
   const [customers, setCustomers] = useState<CustomerRecord[]>(INITIAL_CUSTOMERS);
@@ -19,6 +20,15 @@ export const CustomersView: React.FC = () => {
   const [healthFilter, setHealthFilter] = useState<'All' | CustomerHealthStatus>('All');
   const [selectedCustomer, setSelectedCustomer] = useState<CustomerRecord | null>(null);
   const [simMode, setSimMode] = useState<SimulationMode>('normal');
+
+  useEffect(() => {
+    // Fetch persistent data on mount
+    ApiService.getCustomers().then(setCustomers);
+    ApiService.getLeads().then(setLeads);
+    ApiService.getJobs().then(setJobs);
+    ApiService.getPayments().then(setPayments);
+    ApiService.getTasks().then(setTasks);
+  }, []);
 
   // Filter customers by search query and health status filter
   const filteredCustomers = useMemo(() => {

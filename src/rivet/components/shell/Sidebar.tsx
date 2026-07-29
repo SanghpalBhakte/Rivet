@@ -1,6 +1,8 @@
 import React from 'react';
 import { ActiveModule } from '../../types/rivet';
 import { BUILD_INFO } from '../../config/buildInfo';
+import { useAuth } from '../../context/AuthContext';
+import { Badge } from '../ui/Badge';
 
 interface SidebarProps {
   activeTab?: ActiveModule;
@@ -11,6 +13,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
   activeTab = 'dashboard',
   onSelectTab,
 }) => {
+  const { user, signOut, openAuthModal, isConfigured } = useAuth();
+
   return (
     <aside className="rv-sidebar" aria-label="Main Navigation">
       {/* Brand & Workspace */}
@@ -19,8 +23,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
           <span className="rv-sidebar__logo">RIVET</span>
         </div>
         <div className="rv-sidebar__workspace">
-          <span style={{ fontWeight: 600, color: 'var(--rv-text-primary)', fontSize: '12px' }}>Janai Tours & Ops</span>
-          <span style={{ fontSize: '10px', color: 'var(--rv-text-muted)' }}>Central HQ Desk</span>
+          <span style={{ fontWeight: 600, color: 'var(--rv-text-primary)', fontSize: '12px' }}>Central HQ CRM</span>
+          <span style={{ fontSize: '10px', color: 'var(--rv-text-muted)' }}>
+            {isConfigured ? '⚡ Supabase Postgres DB' : '🔒 Local Persistent DB'}
+          </span>
         </div>
       </div>
 
@@ -93,6 +99,43 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </button>
       </nav>
 
+      {/* Auth & User Session Identity Card */}
+      <div style={{ padding: '10px 12px', borderTop: '1px solid var(--rv-border-subtle)', background: 'var(--rv-bg-surface-elevated)', margin: '0 8px 8px 8px', borderRadius: '6px' }}>
+        {user ? (
+          <div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+              <span style={{ fontSize: '11px', fontWeight: 700, color: 'var(--rv-text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                {user.fullName}
+              </span>
+              <Badge variant={user.role === 'admin' ? 'completed' : 'job'}>
+                {user.role.toUpperCase()}
+              </Badge>
+            </div>
+            <div style={{ fontSize: '10px', color: 'var(--rv-text-muted)', marginBottom: '8px', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+              {user.email}
+            </div>
+            <button
+              onClick={() => signOut()}
+              style={{ width: '100%', background: 'var(--rv-bg-base)', border: '1px solid var(--rv-border-default)', color: 'var(--rv-text-secondary)', padding: '3px 8px', borderRadius: '4px', fontSize: '10px', cursor: 'pointer' }}
+            >
+              Sign Out
+            </button>
+          </div>
+        ) : (
+          <div>
+            <div style={{ fontSize: '11px', color: 'var(--rv-text-muted)', marginBottom: '6px' }}>
+              Guest Session
+            </div>
+            <button
+              onClick={openAuthModal}
+              style={{ width: '100%', background: 'var(--rv-brand-bg)', border: '1px solid var(--rv-brand-border)', color: 'var(--rv-brand)', padding: '4px 8px', borderRadius: '4px', fontSize: '11px', fontWeight: 600, cursor: 'pointer' }}
+            >
+              🔑 Sign In / Sign Up
+            </button>
+          </div>
+        )}
+      </div>
+
       {/* Footer System Status & Deployment Marker */}
       <div className="rv-sidebar__footer">
         <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '4px' }}>
@@ -106,4 +149,5 @@ export const Sidebar: React.FC<SidebarProps> = ({
     </aside>
   );
 };
+
 
