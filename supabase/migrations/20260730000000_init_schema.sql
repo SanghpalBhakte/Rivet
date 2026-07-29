@@ -262,38 +262,77 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 CREATE POLICY "Users can view workspaces they belong to" ON public.workspaces FOR SELECT USING (id IN (SELECT workspace_id FROM public.workspace_members WHERE user_id = auth.uid()));
 CREATE POLICY "Users can view members in their workspace" ON public.workspace_members FOR SELECT USING (workspace_id IN (SELECT workspace_id FROM public.workspace_members WHERE user_id = auth.uid()));
 CREATE POLICY "Users can view user profiles in their workspace" ON public.user_profiles FOR SELECT USING (workspace_id IN (SELECT workspace_id FROM public.workspace_members WHERE user_id = auth.uid()));
-CREATE POLICY "Users can update their own profile" ON public.user_profiles FOR UPDATE USING (id = auth.uid());
+CREATE POLICY "Users can update their own profile" ON public.user_profiles
+  FOR UPDATE
+  USING (id = auth.uid())
+  WITH CHECK (id = auth.uid());
 
 -- RLS Policies for Customers
-CREATE POLICY "Workspace members view customers" ON public.customers FOR SELECT USING (public.is_workspace_member(workspace_id) OR workspace_id = '00000000-0000-0000-0000-000000000001');
-CREATE POLICY "Workspace members insert customers" ON public.customers FOR INSERT WITH CHECK (public.is_workspace_member(workspace_id) OR workspace_id = '00000000-0000-0000-0000-000000000001');
-CREATE POLICY "Workspace members update customers" ON public.customers FOR UPDATE USING (public.is_workspace_member(workspace_id) OR workspace_id = '00000000-0000-0000-0000-000000000001');
+CREATE POLICY "Members view customers" ON public.customers
+  FOR SELECT USING (public.is_workspace_member(workspace_id));
+CREATE POLICY "Members insert customers" ON public.customers
+  FOR INSERT WITH CHECK (public.is_workspace_member(workspace_id));
+CREATE POLICY "Members update customers" ON public.customers
+  FOR UPDATE
+  USING (public.is_workspace_member(workspace_id))
+  WITH CHECK (public.is_workspace_member(workspace_id));
 
 -- RLS Policies for Leads
-CREATE POLICY "Workspace members view leads" ON public.leads FOR SELECT USING (public.is_workspace_member(workspace_id) OR workspace_id = '00000000-0000-0000-0000-000000000001');
-CREATE POLICY "Workspace members insert leads" ON public.leads FOR INSERT WITH CHECK (public.is_workspace_member(workspace_id) OR workspace_id = '00000000-0000-0000-0000-000000000001');
-CREATE POLICY "Workspace members update leads" ON public.leads FOR UPDATE USING (public.is_workspace_member(workspace_id) OR workspace_id = '00000000-0000-0000-0000-000000000001');
+CREATE POLICY "Members view leads" ON public.leads
+  FOR SELECT USING (public.is_workspace_member(workspace_id));
+CREATE POLICY "Members insert leads" ON public.leads
+  FOR INSERT WITH CHECK (public.is_workspace_member(workspace_id));
+CREATE POLICY "Members update leads" ON public.leads
+  FOR UPDATE
+  USING (public.is_workspace_member(workspace_id))
+  WITH CHECK (public.is_workspace_member(workspace_id));
 
 -- RLS Policies for Jobs
-CREATE POLICY "Workspace members view jobs" ON public.jobs FOR SELECT USING (public.is_workspace_member(workspace_id) OR workspace_id = '00000000-0000-0000-0000-000000000001');
-CREATE POLICY "Workspace members insert jobs" ON public.jobs FOR INSERT WITH CHECK (public.is_workspace_member(workspace_id) OR workspace_id = '00000000-0000-0000-0000-000000000001');
-CREATE POLICY "Workspace members update jobs" ON public.jobs FOR UPDATE USING (public.is_workspace_member(workspace_id) OR workspace_id = '00000000-0000-0000-0000-000000000001');
+CREATE POLICY "Members view jobs" ON public.jobs
+  FOR SELECT USING (public.is_workspace_member(workspace_id));
+CREATE POLICY "Members insert jobs" ON public.jobs
+  FOR INSERT WITH CHECK (public.is_workspace_member(workspace_id));
+CREATE POLICY "Members update jobs" ON public.jobs
+  FOR UPDATE
+  USING (public.is_workspace_member(workspace_id))
+  WITH CHECK (public.is_workspace_member(workspace_id));
 
 -- RLS Policies for Payments
-CREATE POLICY "Workspace members view payments" ON public.payments FOR SELECT USING (public.is_workspace_member(workspace_id) OR workspace_id = '00000000-0000-0000-0000-000000000001');
-CREATE POLICY "Workspace members insert payments" ON public.payments FOR INSERT WITH CHECK (public.is_workspace_member(workspace_id) OR workspace_id = '00000000-0000-0000-0000-000000000001');
-CREATE POLICY "Workspace members update payments" ON public.payments FOR UPDATE USING (public.is_workspace_member(workspace_id) OR workspace_id = '00000000-0000-0000-0000-000000000001');
+CREATE POLICY "Members view payments" ON public.payments
+  FOR SELECT USING (public.is_workspace_member(workspace_id));
+CREATE POLICY "Members insert payments" ON public.payments
+  FOR INSERT WITH CHECK (public.is_workspace_member(workspace_id));
+CREATE POLICY "Members update payments" ON public.payments
+  FOR UPDATE
+  USING (public.is_workspace_member(workspace_id))
+  WITH CHECK (public.is_workspace_member(workspace_id));
 
 -- RLS Policies for Tasks
-CREATE POLICY "Workspace members view tasks" ON public.tasks FOR SELECT USING (public.is_workspace_member(workspace_id) OR workspace_id = '00000000-0000-0000-0000-000000000001');
-CREATE POLICY "Workspace members insert tasks" ON public.tasks FOR INSERT WITH CHECK (public.is_workspace_member(workspace_id) OR workspace_id = '00000000-0000-0000-0000-000000000001');
-CREATE POLICY "Workspace members update tasks" ON public.tasks FOR UPDATE USING (public.is_workspace_member(workspace_id) OR workspace_id = '00000000-0000-0000-0000-000000000001');
+CREATE POLICY "Members view tasks" ON public.tasks
+  FOR SELECT USING (public.is_workspace_member(workspace_id));
+CREATE POLICY "Members insert tasks" ON public.tasks
+  FOR INSERT WITH CHECK (public.is_workspace_member(workspace_id));
+CREATE POLICY "Members update tasks" ON public.tasks
+  FOR UPDATE
+  USING (public.is_workspace_member(workspace_id))
+  WITH CHECK (public.is_workspace_member(workspace_id));
 
 -- RLS Policies for Notes
-CREATE POLICY "Workspace members view notes" ON public.notes FOR SELECT USING (public.is_workspace_member(workspace_id) OR workspace_id = '00000000-0000-0000-0000-000000000001');
-CREATE POLICY "Workspace members insert notes" ON public.notes FOR INSERT WITH CHECK (public.is_workspace_member(workspace_id) OR workspace_id = '00000000-0000-0000-0000-000000000001');
-CREATE POLICY "Workspace members update notes" ON public.notes FOR UPDATE USING (public.is_workspace_member(workspace_id) OR workspace_id = '00000000-0000-0000-0000-000000000001');
+CREATE POLICY "Members view notes" ON public.notes
+  FOR SELECT USING (public.is_workspace_member(workspace_id));
+CREATE POLICY "Members insert notes" ON public.notes
+  FOR INSERT WITH CHECK (public.is_workspace_member(workspace_id));
+CREATE POLICY "Members update notes" ON public.notes
+  FOR UPDATE
+  USING (public.is_workspace_member(workspace_id))
+  WITH CHECK (public.is_workspace_member(workspace_id));
 
 -- RLS Policies for Activity Logs
-CREATE POLICY "Workspace members view activity_logs" ON public.activity_logs FOR SELECT USING (public.is_workspace_member(workspace_id) OR workspace_id = '00000000-0000-0000-0000-000000000001');
-CREATE POLICY "Workspace members insert activity_logs" ON public.activity_logs FOR INSERT WITH CHECK (public.is_workspace_member(workspace_id) OR workspace_id = '00000000-0000-0000-0000-000000000001');
+CREATE POLICY "Members view activity_logs" ON public.activity_logs
+  FOR SELECT USING (public.is_workspace_member(workspace_id));
+CREATE POLICY "Members insert activity_logs" ON public.activity_logs
+  FOR INSERT WITH CHECK (public.is_workspace_member(workspace_id));
+CREATE POLICY "Members update activity_logs" ON public.activity_logs
+  FOR UPDATE
+  USING (public.is_workspace_member(workspace_id))
+  WITH CHECK (public.is_workspace_member(workspace_id));
