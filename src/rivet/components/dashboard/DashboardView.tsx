@@ -2,12 +2,10 @@ import React, { useState } from 'react';
 import {
   INITIAL_QUEUE_ITEMS,
   INITIAL_SUMMARY_METRICS,
-  INITIAL_PIPELINE_STAGES,
   INITIAL_RECENT_ACTIVITIES,
 } from '../../data/mockData';
 import { QueueItem, SimulationMode } from '../../types/rivet';
 import { PageHeader } from '../ui/PageHeader';
-import { PipelineStrip } from '../ui/PipelineStrip';
 import { TodayQueue } from './TodayQueue';
 import { TodayReminders } from './TodayReminders';
 import { SummaryColumn } from './SummaryColumn';
@@ -42,10 +40,10 @@ export const DashboardView: React.FC = () => {
 
   return (
     <div>
-      {/* Clean Page Header with title and short operational subline */}
+      {/* Clean Page Header */}
       <PageHeader
         title="Operations Control Room"
-        subline="Janai Tours & Service Ops • Monday, Jul 27 • Operational items & reminders"
+        subline="Janai Tours & Service Ops • Real-time operational overview & daily action queue"
         simMode={simMode}
         onSimModeChange={handleSimModeChange}
       />
@@ -62,13 +60,23 @@ export const DashboardView: React.FC = () => {
         </div>
       )}
 
-      {/* Pipeline stage counter strip */}
-      <PipelineStrip stages={INITIAL_PIPELINE_STAGES} simMode={simMode} />
+      {/* Balanced Stat Metrics Bar */}
+      <div className="rv-metrics-grid" style={{ marginBottom: '16px' }}>
+        {INITIAL_SUMMARY_METRICS.map((m) => (
+          <div key={m.id} className={`rv-metric-card ${m.urgent ? 'rv-metric-card--urgent' : ''}`}>
+            <div className="rv-metric-card__value rv-num">
+              {simMode === 'empty' ? 0 : m.value}
+            </div>
+            <div className="rv-metric-card__label">{m.label}</div>
+            <div className="rv-metric-card__subtext">{m.subtext}</div>
+          </div>
+        ))}
+      </div>
 
-      {/* Dashboard Grid: Main Hero (Today's Queue + Today's Reminders) + Secondary Summary Column */}
+      {/* Two-Column Control Room Grid */}
       <div className="rv-dashboard-grid">
-        {/* Main Hero Section */}
-        <section aria-label="Today's Operational Queue and Reminders" style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+        {/* Left Primary Hero Section: Priority Queue & Ops Reminders */}
+        <section aria-label="Today's Operational Actions" style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
           <TodayQueue
             items={queueItems}
             onActionComplete={handleActionComplete}
@@ -80,18 +88,19 @@ export const DashboardView: React.FC = () => {
           />
         </section>
 
-        {/* Secondary Compact Summary Column */}
-        <SummaryColumn
-          metrics={INITIAL_SUMMARY_METRICS}
-          simMode={simMode}
-        />
-      </div>
+        {/* Right Secondary Sidebar: Pipeline Summary & Activity Log */}
+        <aside aria-label="Pipeline & Activity Log" style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          <SummaryColumn
+            metrics={INITIAL_SUMMARY_METRICS}
+            simMode={simMode}
+          />
 
-      {/* Quiet Recent Activity Section */}
-      <RecentActivity
-        activities={INITIAL_RECENT_ACTIVITIES}
-        simMode={simMode}
-      />
+          <RecentActivity
+            activities={INITIAL_RECENT_ACTIVITIES}
+            simMode={simMode}
+          />
+        </aside>
+      </div>
     </div>
   );
 };
