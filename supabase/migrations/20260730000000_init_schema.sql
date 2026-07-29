@@ -106,7 +106,8 @@ CREATE TABLE IF NOT EXISTS public.jobs (
     primary_action_label TEXT DEFAULT 'Dispatch Vehicle',
     created_by UUID REFERENCES auth.users(id) ON DELETE SET NULL,
     created_at TIMESTAMPTZ DEFAULT NOW(),
-    updated_at TIMESTAMPTZ DEFAULT NOW()
+    updated_at TIMESTAMPTZ DEFAULT NOW(),
+    CONSTRAINT jobs_workspace_job_code_key UNIQUE (workspace_id, job_code)
 );
 
 -- Payments Table

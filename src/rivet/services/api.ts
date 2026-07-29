@@ -1025,17 +1025,19 @@ export const ApiService = {
     actor?: { id?: string; name?: string }
   ): Promise<Job[]> {
     if (isSupabaseConfigured) {
-      // Generate a sequential-style job code
+      // Generate a sequential-style job code with fallback retry for concurrent safety
       const { count } = await supabase
         .from('jobs')
         .select('*', { count: 'exact', head: true })
         .eq('workspace_id', workspaceId);
-      const jobCode = `JOB-${String((count ?? 0) + 1).padStart(3, '0')}`;
+
+      const baseSeq = (count ?? 0) + 1;
+      let jobCode = `JOB-${String(baseSeq).padStart(3, '0')}`;
 
       const advance = job.advancePaid ?? 0;
       const due = job.totalAmount - advance;
 
-      const { error } = await supabase.from('jobs').insert({
+      let { error } = await supabase.from('jobs').insert({
         workspace_id: workspaceId,
         job_code: jobCode,
         customer_name: job.customerName,
@@ -1054,6 +1056,32 @@ export const ApiService = {
         payment_status: due === 0 ? 'Paid' : advance > 0 ? 'Partial' : 'Pending',
         primary_action_label: 'Dispatch Vehicle',
       });
+
+      // If a unique constraint violation occurs due to concurrent inserts, retry with collision-proof suffix
+      if (error && (error.code === '23505' || error.message.includes('unique constraint') || error.message.includes('duplicate key'))) {
+        jobCode = `JOB-${String(baseSeq).padStart(3, '0')}-${Date.now().toString(36).slice(-4).toUpperCase()}`;
+        const retryRes = await supabase.from('jobs').insert({
+          workspace_id: workspaceId,
+          job_code: jobCode,
+          customer_name: job.customerName,
+          customer_phone: job.customerPhone,
+          service_title: job.serviceTitle,
+          scheduled_date_time: job.scheduledDateTime,
+          status: 'Scheduled',
+          driver_name: job.driverName || 'Unassigned',
+          vehicle_details: job.vehicleDetails || 'TBD',
+          pickup_location: job.pickupLocation,
+          drop_location: job.dropLocation,
+          total_amount: job.totalAmount,
+          advance_paid: advance,
+          due_amount: due,
+          payment_method: 'UPI',
+          payment_status: due === 0 ? 'Paid' : advance > 0 ? 'Partial' : 'Pending',
+          primary_action_label: 'Dispatch Vehicle',
+        });
+        error = retryRes.error;
+      }
+
       if (error) throw new Error(`[Rivet] createJob: ${error.message}`);
 
       await _logActivity({
