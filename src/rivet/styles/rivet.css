@@ -1,69 +1,74 @@
 /* ==========================================================================
-   RIVET DESIGN SYSTEM — Quiet Operations Control Room
-   Designed for clarity, zero clutter, grounded earth/slate palette,
-   tabular numeric data, and high operational rhythm.
+   RIVET DESIGN SYSTEM — Calm Graphite Theme (Executive Operations Workspace)
+   Designed for low-glare shift work, high information density,
+   executive slate/teal palette, and tabular numeric alignment.
    ========================================================================== */
 
 :root {
-  /* Surface & Base Palette (Dark Slate / Grounded Industrial) */
-  --rv-bg-base: #0b0d10;
-  --rv-bg-surface: #12151b;
-  --rv-bg-surface-elevated: #171b23;
-  --rv-bg-surface-hover: #1c212b;
-  --rv-bg-input: #0f1217;
+  /* Surface & Base Palette (Deep Charcoal & Soft Graphite Layering) */
+  --rv-bg-base: #080a0d;
+  --rv-bg-surface: #0f1318;
+  --rv-bg-surface-elevated: #151921;
+  --rv-bg-surface-hover: #1b212b;
+  --rv-bg-input: #0b0e12;
   
   /* Borders & Dividers */
-  --rv-border-subtle: #1e232d;
-  --rv-border-default: #282e3b;
-  --rv-border-strong: #373e4f;
-  --rv-border-focus: #4b5563;
+  --rv-border-subtle: #19202a;
+  --rv-border-default: #232c3a;
+  --rv-border-strong: #313d4f;
+  --rv-border-focus: #2dd4bf;
+
+  /* Shadows & Depth System */
+  --rv-shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.35);
+  --rv-shadow-md: 0 4px 16px rgba(0, 0, 0, 0.4);
+  --rv-shadow-lg: 0 8px 30px rgba(0, 0, 0, 0.5);
 
   /* Typography Colors */
-  --rv-text-primary: #f1f5f9;
+  --rv-text-primary: #f8fafc;
   --rv-text-secondary: #94a3b8;
   --rv-text-muted: #64748b;
   --rv-text-dim: #475569;
 
-  /* Operational Status Colors (Muted, Non-glowing) */
-  /* Overdue / Critical — Amber-Rust */
+  /* Operational Status Colors (Muted, Non-glowing, Low-glare Palette) */
+  /* Overdue / Critical — Muted Amber Warmth */
   --rv-status-overdue-text: #fbbf24;
-  --rv-status-overdue-bg: rgba(245, 158, 11, 0.12);
-  --rv-status-overdue-border: rgba(245, 158, 11, 0.3);
+  --rv-status-overdue-bg: rgba(245, 158, 11, 0.1);
+  --rv-status-overdue-border: rgba(245, 158, 11, 0.22);
 
   /* Overdue Button Action Accent */
   --rv-btn-overdue-bg: #d97706;
   --rv-btn-overdue-hover: #b45309;
   --rv-btn-overdue-text: #ffffff;
 
-  /* Today / Callback — Muted Steel Blue */
+  /* Callback / Pending — Steel Blue */
   --rv-status-callback-text: #38bdf8;
   --rv-status-callback-bg: rgba(56, 189, 248, 0.1);
-  --rv-status-callback-border: rgba(56, 189, 248, 0.25);
+  --rv-status-callback-border: rgba(56, 189, 248, 0.22);
 
-  /* Jobs / Active — Muted Sage Emerald */
-  --rv-status-job-text: #34d399;
-  --rv-status-job-bg: rgba(52, 211, 153, 0.1);
-  --rv-status-job-border: rgba(52, 211, 153, 0.25);
+  /* Jobs / Active — Calm Sea-Green Teal */
+  --rv-status-job-text: #2dd4bf;
+  --rv-status-job-bg: rgba(45, 212, 191, 0.1);
+  --rv-status-job-border: rgba(45, 212, 191, 0.22);
 
-  /* Completed / Success — Soft Olive */
-  --rv-status-completed-text: #a3e635;
-  --rv-status-completed-bg: rgba(163, 230, 53, 0.1);
-  --rv-status-completed-border: rgba(163, 230, 53, 0.22);
+  /* Completed / Settled — Soft Emerald */
+  --rv-status-completed-text: #34d399;
+  --rv-status-completed-bg: rgba(52, 211, 153, 0.1);
+  --rv-status-completed-border: rgba(52, 211, 153, 0.22);
 
-  /* Neutral / Pending — Slate */
+  /* Neutral / Closed — Quiet Slate */
   --rv-status-neutral-text: #94a3b8;
   --rv-status-neutral-bg: rgba(148, 163, 184, 0.08);
-  --rv-status-neutral-border: rgba(148, 163, 184, 0.2);
+  --rv-status-neutral-border: rgba(148, 163, 184, 0.18);
 
-  /* Brand Operational Accent — Steel Slate Warmth */
-  --rv-brand: #cbd5e1;
-  --rv-brand-bg: #1e293b;
-  --rv-brand-border: #475569;
+  /* Brand Operational Accent — Calm Graphite Slate with Teal Highlight */
+  --rv-brand: #2dd4bf;
+  --rv-brand-bg: #132a28;
+  --rv-brand-border: #14b8a6;
 
   /* Fonts & Tabular Data */
   --rv-font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 
-  /* Spacing Grid (4px scale) */
+  /* Spacing Scale (4px grid) */
   --rv-space-1: 4px;
   --rv-space-2: 8px;
   --rv-space-3: 12px;
@@ -72,7 +77,7 @@
   --rv-space-6: 24px;
   --rv-space-8: 32px;
 
-  /* Radii (Sharp & Grounded) */
+  /* Radii Scale */
   --rv-radius-sm: 4px;
   --rv-radius-md: 6px;
   --rv-radius-lg: 8px;
@@ -117,7 +122,7 @@
 .rv-shell__content,
 .rv-content {
   padding: var(--rv-space-6);
-  max-width: 1140px;
+  max-width: 1180px;
   width: 100%;
   margin: 0 auto;
   box-sizing: border-box;
@@ -126,7 +131,7 @@
 /* Dashboard Grid Layout */
 .rv-dashboard-grid {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 340px;
+  grid-template-columns: minmax(0, 1fr) 350px;
   gap: var(--rv-space-5);
   margin-bottom: var(--rv-space-4);
   align-items: start;
@@ -163,11 +168,11 @@
 
 .rv-sidebar__logo {
   font-weight: 800;
-  font-size: 15px;
-  letter-spacing: 0.12em;
-  color: var(--rv-text-primary);
-  background: var(--rv-bg-surface-elevated);
-  border: 1px solid var(--rv-border-default);
+  font-size: 14px;
+  letter-spacing: 0.14em;
+  color: var(--rv-brand);
+  background: var(--rv-brand-bg);
+  border: 1px solid var(--rv-brand-border);
   padding: 2px 8px;
   border-radius: var(--rv-radius-sm);
 }
@@ -216,8 +221,8 @@
   background-color: var(--rv-bg-surface-elevated);
   color: var(--rv-text-primary);
   font-weight: 600;
-  border-color: var(--rv-border-subtle);
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+  border-color: var(--rv-border-default);
+  box-shadow: var(--rv-shadow-sm);
 }
 
 .rv-sidebar__link--active::before {
@@ -253,8 +258,8 @@
 
 /* Header Component */
 .rv-header {
-  padding-bottom: var(--rv-space-5);
-  margin-bottom: var(--rv-space-6);
+  padding-bottom: var(--rv-space-4);
+  margin-bottom: var(--rv-space-5);
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
@@ -268,7 +273,7 @@
 }
 
 .rv-header__title {
-  font-size: 24px;
+  font-size: 22px;
   font-weight: 700;
   letter-spacing: -0.015em;
   color: var(--rv-text-primary);
@@ -295,8 +300,8 @@
   border-radius: var(--rv-radius-lg);
   padding: 18px 22px;
   margin-bottom: 0;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
-  transition: border-color 0.15s ease;
+  box-shadow: var(--rv-shadow-sm);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
 .rv-card:hover {
@@ -309,6 +314,7 @@
 
 .rv-card--hero {
   border: 1px solid var(--rv-border-default);
+  background-color: var(--rv-bg-surface-elevated);
 }
 
 .rv-card__header {
@@ -339,7 +345,7 @@
   background-color: var(--rv-border-subtle);
   border-radius: var(--rv-radius-md);
   overflow: hidden;
-  border: 1px solid transparent; /* Replaced border-subtle with transparent to remove box-in-box look */
+  border: 1px solid transparent;
 }
 
 .rv-queue-item {
@@ -477,14 +483,15 @@
 }
 
 .rv-btn--primary {
-  background-color: var(--rv-btn-overdue-bg);
-  color: var(--rv-btn-overdue-text);
-  border-color: rgba(255, 255, 255, 0.1);
+  background-color: var(--rv-bg-surface-elevated);
+  color: var(--rv-status-job-text);
+  border-color: var(--rv-status-job-border);
   font-weight: 600;
 }
 
 .rv-btn--primary:hover {
-  background-color: var(--rv-btn-overdue-hover);
+  background-color: var(--rv-bg-surface-hover);
+  border-color: var(--rv-brand);
 }
 
 .rv-btn--secondary {
@@ -501,11 +508,212 @@
 .rv-btn--ghost {
   background-color: transparent;
   color: var(--rv-text-secondary);
+  border-color: transparent;
 }
 
 .rv-btn--ghost:hover {
   background-color: var(--rv-bg-surface-hover);
   color: var(--rv-text-primary);
+}
+
+/* Queue Tab Controls */
+.rv-queue-tabs {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  background-color: var(--rv-bg-input);
+  padding: 3px;
+  border-radius: var(--rv-radius-md);
+  border: 1px solid var(--rv-border-subtle);
+  overflow-x: auto;
+}
+
+.rv-queue-tab {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 10px;
+  border-radius: var(--rv-radius-sm);
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--rv-text-secondary);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: all 0.12s ease;
+  white-space: nowrap;
+}
+
+.rv-queue-tab:hover {
+  color: var(--rv-text-primary);
+  background-color: var(--rv-bg-surface-hover);
+}
+
+.rv-queue-tab--active {
+  background-color: var(--rv-bg-surface-elevated);
+  color: var(--rv-text-primary);
+  font-weight: 600;
+  box-shadow: var(--rv-shadow-sm);
+  border: 1px solid var(--rv-border-default);
+}
+
+.rv-queue-tab__count {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 1px 5px;
+  border-radius: var(--rv-radius-pill);
+  background-color: var(--rv-bg-surface);
+  color: var(--rv-text-muted);
+}
+
+.rv-queue-tab--active .rv-queue-tab__count {
+  background-color: var(--rv-brand-bg);
+  color: var(--rv-brand);
+}
+
+/* Search Bar Wrapper */
+.rv-leads-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--rv-space-3);
+  margin-bottom: var(--rv-space-4);
+  flex-wrap: wrap;
+}
+
+.rv-search-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  flex: 1;
+  min-width: 240px;
+}
+
+.rv-search-icon {
+  position: absolute;
+  left: 10px;
+  font-size: 12px;
+  color: var(--rv-text-muted);
+  pointer-events: none;
+}
+
+.rv-search-input {
+  width: 100%;
+  padding: 7px 10px 7px 30px;
+  background-color: var(--rv-bg-input);
+  border: 1px solid var(--rv-border-default);
+  border-radius: var(--rv-radius-md);
+  color: var(--rv-text-primary);
+  font-size: 12px;
+  transition: all 0.15s ease;
+}
+
+.rv-search-input:focus {
+  outline: none;
+  border-color: var(--rv-border-focus);
+  box-shadow: 0 0 0 2px rgba(45, 212, 191, 0.15);
+}
+
+.rv-search-clear {
+  position: absolute;
+  right: 8px;
+  background: none;
+  border: none;
+  color: var(--rv-text-muted);
+  font-size: 12px;
+  cursor: pointer;
+}
+
+/* Input Fields & Forms */
+.rv-lead-note-input {
+  background-color: var(--rv-bg-input);
+  border: 1px solid var(--rv-border-default);
+  border-radius: var(--rv-radius-md);
+  color: var(--rv-text-primary);
+  font-size: 12px;
+  padding: 6px 10px;
+  transition: all 0.15s ease;
+}
+
+.rv-lead-note-input:focus {
+  outline: none;
+  border-color: var(--rv-border-focus);
+  box-shadow: 0 0 0 2px rgba(45, 212, 191, 0.15);
+}
+
+.rv-lead-note-card {
+  background: var(--rv-bg-base);
+  border: 1px solid var(--rv-border-subtle);
+  padding: 8px 10px;
+  border-radius: var(--rv-radius-sm);
+}
+
+@media (max-width: 900px) {
+  .rv-customer-workspace {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+/* Empty States */
+.rv-empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 48px 24px;
+  background-color: var(--rv-bg-surface-elevated);
+  border-radius: var(--rv-radius-md);
+  border: 1px dashed var(--rv-border-strong);
+}
+
+.rv-empty-state__icon {
+  font-size: 24px;
+  color: var(--rv-text-muted);
+  margin-bottom: 12px;
+  background: var(--rv-bg-base);
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  border: 1px solid var(--rv-border-subtle);
+}
+
+.rv-empty-state__title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--rv-text-primary);
+  margin: 0 0 4px 0;
+}
+
+.rv-empty-state__desc {
+  font-size: 12px;
+  color: var(--rv-text-muted);
+  max-width: 320px;
+  line-height: 1.5;
+  margin: 0 auto;
+}
+
+/* Skeleton Loading State */
+.rv-skeleton {
+  background: linear-gradient(90deg, var(--rv-bg-surface-elevated) 25%, var(--rv-bg-surface-hover) 50%, var(--rv-bg-surface-elevated) 75%);
+  background-size: 200% 100%;
+  animation: rv-skeleton-shimmer 1.5s infinite;
+  border-radius: var(--rv-radius-sm);
+}
+
+@keyframes rv-skeleton-shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+.rv-skeleton-row {
+  height: 44px;
+  margin-bottom: 6px;
+  width: 100%;
+  border-radius: var(--rv-radius-md);
 }
 
 /* Summary Metrics Column */

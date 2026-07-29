@@ -19,8 +19,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
           <span className="rv-sidebar__logo">RIVET</span>
         </div>
         <div className="rv-sidebar__workspace">
-          <span style={{ fontWeight: 600, color: 'var(--rv-text-primary)' }}>Janai Tours & Ops</span>
-          <span style={{ fontSize: '10px', color: 'var(--rv-text-dim)' }}>Central HQ</span>
+          <span style={{ fontWeight: 600, color: 'var(--rv-text-primary)', fontSize: '12px' }}>Janai Tours & Ops</span>
+          <span style={{ fontSize: '10px', color: 'var(--rv-text-muted)' }}>Central HQ Desk</span>
         </div>
       </div>
 
@@ -31,7 +31,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
           onClick={() => onSelectTab && onSelectTab('dashboard')}
           aria-current={activeTab === 'dashboard' ? 'page' : undefined}
         >
-          <span>Dashboard</span>
+          <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <span>📊</span>
+            <span>Control Room</span>
+          </span>
         </button>
 
         <button
@@ -39,7 +42,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
           onClick={() => onSelectTab && onSelectTab('leads')}
           aria-current={activeTab === 'leads' ? 'page' : undefined}
         >
-          <span>Leads</span>
+          <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <span>📋</span>
+            <span>Leads & Inquiries</span>
+          </span>
         </button>
 
         <button
@@ -47,7 +53,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
           onClick={() => onSelectTab && onSelectTab('jobs')}
           aria-current={activeTab === 'jobs' ? 'page' : undefined}
         >
-          <span>Jobs</span>
+          <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <span>🚚</span>
+            <span>Dispatch Jobs</span>
+          </span>
         </button>
 
         <button
@@ -55,7 +64,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
           onClick={() => onSelectTab && onSelectTab('payments')}
           aria-current={activeTab === 'payments' ? 'page' : undefined}
         >
-          <span>Payments</span>
+          <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <span>💳</span>
+            <span>Payments Ledger</span>
+          </span>
         </button>
 
         <button
@@ -63,7 +75,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
           onClick={() => onSelectTab && onSelectTab('customers')}
           aria-current={activeTab === 'customers' ? 'page' : undefined}
         >
-          <span>Customers</span>
+          <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <span>👥</span>
+            <span>Customers & Accounts</span>
+          </span>
         </button>
 
         <button
@@ -71,7 +86,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
           onClick={() => onSelectTab && onSelectTab('tasks')}
           aria-current={activeTab === 'tasks' ? 'page' : undefined}
         >
-          <span>Tasks & Reminders</span>
+          <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <span>🔔</span>
+            <span>Tasks & Reminders</span>
+          </span>
         </button>
       </nav>
 
@@ -79,7 +97,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       <div className="rv-sidebar__footer">
         <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '4px' }}>
           <span className="rv-sidebar__status-dot" aria-hidden="true" />
-          <span>Operations Active</span>
+          <span style={{ color: 'var(--rv-text-secondary)' }}>Central Ops Live</span>
         </div>
         <div style={{ fontSize: '10px', color: 'var(--rv-text-dim)', fontFamily: 'monospace', letterSpacing: '0.02em' }}>
           v{BUILD_INFO.version} • cf-pages@{BUILD_INFO.commitHash}
@@ -88,3 +106,4 @@ export const Sidebar: React.FC<SidebarProps> = ({
     </aside>
   );
 };
+
