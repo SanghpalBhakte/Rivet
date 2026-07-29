@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
+import { ApiService, DEV_WORKSPACE_ID } from '../services/api';
 
 export type UserRole = 'admin' | 'operations' | 'accounts' | 'viewer';
 
@@ -32,8 +33,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       id: 'usr-admin-01',
       email: 'ops.admin@rivet.internal',
       fullName: 'Suresh M. (Ops Admin)',
-      role: 'admin',
-      workspaceId: 'ws-central-hq',
+      role: 'admin' as UserRole,
+      workspaceId: DEV_WORKSPACE_ID,
     };
   });
 
@@ -71,18 +72,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         .single();
 
       if (data) {
+        const resolvedWorkspaceId = data.workspace_id || DEV_WORKSPACE_ID;
         const profile: UserProfile = {
           id: data.id,
           email: data.email || email,
           fullName: data.full_name || 'Ops Staff',
           role: (data.role as UserRole) || 'operations',
-          workspaceId: data.workspace_id || 'ws-central-hq',
+          workspaceId: resolvedWorkspaceId,
         };
         setUser(profile);
         localStorage.setItem('rv_active_user', JSON.stringify(profile));
+
+        // Idempotent: ensure workspace_members row exists for this session
+        await ApiService.ensureWorkspaceMembership(userId, resolvedWorkspaceId, data.role || 'operations');
       }
     } catch {
-      // Fallback
+      // Fallback — don't block auth on profile fetch failure
     }
   };
 

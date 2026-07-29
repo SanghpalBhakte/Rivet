@@ -19,12 +19,11 @@ import {
 /* ============================================================================
    SEED WORKSPACE — matches seed.sql
    ============================================================================ */
-const DEV_WORKSPACE_ID = '00000000-0000-0000-0000-000000000001';
+export const DEV_WORKSPACE_ID = '00000000-0000-0000-0000-000000000001';
 
 /* ============================================================================
-   LOCAL FALLBACK DATA — exact UUIDs match seed.sql, used only when Supabase
-   returns 0 rows (e.g. first run before seed, or offline).
-   localStorage is NO LONGER the write target for any operation.
+   LOCAL FALLBACK DATA — used only when Supabase returns 0 rows.
+   localStorage is NOT used as a write target.
    ============================================================================ */
 const FALLBACK_CUSTOMERS: CustomerRecord[] = [
   {
@@ -168,7 +167,21 @@ const FALLBACK_PAYMENTS: PaymentRecord[] = [
 ];
 
 /* ============================================================================
-   MAPPERS — DB row → typed app model
+   ACTIVITY LOG TYPES
+   ============================================================================ */
+export interface ActivityLogEntry {
+  id: string;
+  category: string;
+  title: string;
+  description: string;
+  actorName: string;
+  entityId: string;
+  entityType: string;
+  createdAt: string;
+}
+
+/* ============================================================================
+   MAPPERS
    ============================================================================ */
 const mapCustomer = (c: Record<string, unknown>): CustomerRecord => ({
   id: c.id as string,
@@ -272,25 +285,139 @@ const mapNote = (n: Record<string, unknown>): LeadNote => ({
   text: n.text as string,
 });
 
+const mapActivity = (a: Record<string, unknown>): ActivityLogEntry => ({
+  id: a.id as string,
+  category: (a.category as string) || 'general',
+  title: a.title as string,
+  description: (a.description as string) || '',
+  actorName: (a.actor_name as string) || 'Ops Staff',
+  entityId: (a.entity_id as string) || '',
+  entityType: (a.entity_type as string) || '',
+  createdAt: a.created_at
+    ? new Date(a.created_at as string).toLocaleString()
+    : 'Just now',
+});
+
 /* ============================================================================
-   RIVET CRM API SERVICE
-   Write path: always Supabase when configured, throws on error (no silent fallback).
-   Read path: Supabase with local seed fallback when 0 rows returned.
+   INTERNAL HELPERS
+   ============================================================================ */
+
+/** Fire-and-forget activity log — never blocks the calling operation */
+async function _logActivity(opts: {
+  workspaceId: string;
+  actorId?: string;
+  actorName?: string;
+  category: string;
+  title: string;
+  description: string;
+  entityId?: string;
+  entityType?: string;
+}): Promise<void> {
+  if (!isSupabaseConfigured) return;
+  try {
+    await supabase.from('activity_logs').insert({
+      workspace_id: opts.workspaceId,
+      actor_id: opts.actorId || null,
+      actor_name: opts.actorName || 'Ops Staff',
+      category: opts.category,
+      title: opts.title,
+      description: opts.description,
+      entity_id: opts.entityId || null,
+      entity_type: opts.entityType || null,
+    });
+  } catch {
+    // Activity logging is non-critical — never throw
+  }
+}
+
+async function _loadNotes(entityId: string): Promise<LeadNote[]> {
+  if (!isSupabaseConfigured) return [];
+  const { data } = await supabase
+    .from('notes')
+    .select('*')
+    .eq('linked_entity_id', entityId)
+    .order('created_at', { ascending: false });
+  return data ? (data as Record<string, unknown>[]).map(mapNote) : [];
+}
+
+/* ============================================================================
+   RIVET CRM API SERVICE — Phase 3
+   All writes are awaited. localStorage is not a write target.
+   Activity logs are written after every meaningful CRM action.
    ============================================================================ */
 export const ApiService = {
+
+  /* ── WORKSPACE MEMBERSHIP ───────────────────────────────────────────────── */
+
+  /**
+   * Called after login. Ensures the authenticated user is recorded as a member
+   * of their workspace. Idempotent — safe to call on every session restore.
+   */
+  async ensureWorkspaceMembership(
+    userId: string,
+    workspaceId: string,
+    role: string = 'operations'
+  ): Promise<void> {
+    if (!isSupabaseConfigured) return;
+    const { data: existing } = await supabase
+      .from('workspace_members')
+      .select('id')
+      .eq('workspace_id', workspaceId)
+      .eq('user_id', userId)
+      .maybeSingle();
+
+    if (!existing) {
+      await supabase.from('workspace_members').insert({
+        workspace_id: workspaceId,
+        user_id: userId,
+        role,
+      });
+    }
+  },
+
+  /* ── ACTIVITY LOGS ──────────────────────────────────────────────────────── */
+
+  async getActivityLog(
+    workspaceId: string = DEV_WORKSPACE_ID,
+    entityId?: string,
+    limit = 50
+  ): Promise<ActivityLogEntry[]> {
+    if (!isSupabaseConfigured) return [];
+    let query = supabase
+      .from('activity_logs')
+      .select('*')
+      .eq('workspace_id', workspaceId)
+      .order('created_at', { ascending: false })
+      .limit(limit);
+
+    if (entityId) {
+      query = query.eq('entity_id', entityId);
+    }
+
+    const { data, error } = await query;
+    if (error) console.error('[Rivet] getActivityLog:', error.message);
+    return data ? (data as Record<string, unknown>[]).map(mapActivity) : [];
+  },
 
   /* ── CUSTOMERS ─────────────────────────────────────────────────────────── */
 
   async getCustomers(): Promise<CustomerRecord[]> {
     if (isSupabaseConfigured) {
-      const { data, error } = await supabase.from('customers').select('*').order('created_at', { ascending: false });
+      const { data, error } = await supabase
+        .from('customers')
+        .select('*')
+        .order('created_at', { ascending: false });
       if (error) console.error('[Rivet] getCustomers:', error.message);
       if (data && data.length > 0) return (data as Record<string, unknown>[]).map(mapCustomer);
     }
     return FALLBACK_CUSTOMERS;
   },
 
-  async updateCustomer(id: string, updates: Partial<CustomerRecord>): Promise<CustomerRecord[]> {
+  async updateCustomer(
+    id: string,
+    updates: Partial<CustomerRecord>,
+    actor?: { id?: string; name?: string; workspaceId?: string }
+  ): Promise<CustomerRecord[]> {
     if (isSupabaseConfigured) {
       const { error } = await supabase.from('customers').update({
         name: updates.name,
@@ -302,29 +429,92 @@ export const ApiService = {
         updated_at: new Date().toISOString(),
       }).eq('id', id);
       if (error) throw new Error(`[Rivet] updateCustomer: ${error.message}`);
+
+      await _logActivity({
+        workspaceId: actor?.workspaceId || DEV_WORKSPACE_ID,
+        actorId: actor?.id,
+        actorName: actor?.name,
+        category: 'customer',
+        title: 'Customer record updated',
+        description: `Updated fields: ${Object.keys(updates).join(', ')}`,
+        entityId: id,
+        entityType: 'Customer',
+      });
+
       return this.getCustomers();
     }
     return FALLBACK_CUSTOMERS.map((c) => (c.id === id ? { ...c, ...updates } : c));
+  },
+
+  async getCustomerNotes(customerId: string): Promise<LeadNote[]> {
+    return _loadNotes(customerId);
+  },
+
+  async addCustomerNote(
+    customerId: string,
+    text: string,
+    actor?: { id?: string; name?: string; workspaceId?: string }
+  ): Promise<LeadNote> {
+    const workspaceId = actor?.workspaceId || DEV_WORKSPACE_ID;
+    const note = await this.addNote(customerId, 'Customer', text, actor?.id, actor?.name, workspaceId);
+
+    await _logActivity({
+      workspaceId,
+      actorId: actor?.id,
+      actorName: actor?.name,
+      category: 'note',
+      title: 'Internal note added to customer',
+      description: text.substring(0, 120),
+      entityId: customerId,
+      entityType: 'Customer',
+    });
+
+    return note;
+  },
+
+  async updateCustomerFollowUp(
+    customerId: string,
+    nextFollowUp: string,
+    actor?: { id?: string; name?: string; workspaceId?: string }
+  ): Promise<CustomerRecord[]> {
+    if (isSupabaseConfigured) {
+      const { error } = await supabase.from('customers').update({
+        next_follow_up: nextFollowUp,
+        updated_at: new Date().toISOString(),
+      }).eq('id', customerId);
+      if (error) throw new Error(`[Rivet] updateCustomerFollowUp: ${error.message}`);
+
+      await _logActivity({
+        workspaceId: actor?.workspaceId || DEV_WORKSPACE_ID,
+        actorId: actor?.id,
+        actorName: actor?.name,
+        category: 'customer',
+        title: 'Follow-up scheduled',
+        description: `Next follow-up set to: ${nextFollowUp}`,
+        entityId: customerId,
+        entityType: 'Customer',
+      });
+
+      return this.getCustomers();
+    }
+    return FALLBACK_CUSTOMERS.map((c) =>
+      c.id === customerId ? { ...c, nextFollowUp } : c
+    );
   },
 
   /* ── LEADS ─────────────────────────────────────────────────────────────── */
 
   async getLeads(): Promise<Lead[]> {
     if (isSupabaseConfigured) {
-      const { data, error } = await supabase.from('leads').select('*').order('created_at', { ascending: false });
+      const { data, error } = await supabase
+        .from('leads')
+        .select('*')
+        .order('created_at', { ascending: false });
       if (error) console.error('[Rivet] getLeads:', error.message);
       if (data && data.length > 0) {
         const leads = (data as Record<string, unknown>[]).map(mapLead);
-        // Load notes for each lead
         for (const lead of leads) {
-          const { data: notes } = await supabase
-            .from('notes')
-            .select('*')
-            .eq('linked_entity_id', lead.id)
-            .order('created_at', { ascending: false });
-          if (notes && notes.length > 0) {
-            lead.notes = (notes as Record<string, unknown>[]).map(mapNote);
-          }
+          lead.notes = await _loadNotes(lead.id);
         }
         return leads;
       }
@@ -334,7 +524,8 @@ export const ApiService = {
 
   async createLead(
     lead: Omit<Lead, 'id' | 'notes' | 'createdAt'>,
-    workspaceId: string = DEV_WORKSPACE_ID
+    workspaceId: string = DEV_WORKSPACE_ID,
+    actor?: { id?: string; name?: string }
   ): Promise<Lead[]> {
     if (isSupabaseConfigured) {
       const { error } = await supabase.from('leads').insert({
@@ -353,39 +544,63 @@ export const ApiService = {
         primary_action_label: lead.primaryActionLabel || 'Mark Contacted',
       });
       if (error) throw new Error(`[Rivet] createLead: ${error.message}`);
+
+      await _logActivity({
+        workspaceId,
+        actorId: actor?.id,
+        actorName: actor?.name,
+        category: 'lead',
+        title: 'New lead created',
+        description: `${lead.customerName} — ${lead.serviceTitle} via ${lead.source}`,
+        entityType: 'Lead',
+      });
+
       return this.getLeads();
     }
-    // Offline fallback: return merged list
-    const newLead: Lead = {
-      ...lead,
-      id: `ld-${Date.now()}`,
-      notes: [],
-      createdAt: new Date().toISOString().split('T')[0],
-    };
-    return [newLead, ...FALLBACK_LEADS];
+    return [{ ...lead, id: `ld-${Date.now()}`, notes: [], createdAt: new Date().toISOString().split('T')[0] }, ...FALLBACK_LEADS];
   },
 
-  async updateLeadStage(id: string, stage: LeadStage): Promise<Lead[]> {
-    if (isSupabaseConfigured) {
-      const label =
-        stage === 'New' ? 'Mark Contacted'
-        : stage === 'Contacted' ? 'Send Quote'
-        : stage === 'Quote Sent' ? 'Mark Confirmed'
-        : stage === 'Confirmed' ? 'Close & Archive'
-        : 'Reopen Lead';
+  async updateLeadStage(
+    id: string,
+    stage: LeadStage,
+    actor?: { id?: string; name?: string; workspaceId?: string }
+  ): Promise<Lead[]> {
+    const label =
+      stage === 'New' ? 'Mark Contacted'
+      : stage === 'Contacted' ? 'Send Quote'
+      : stage === 'Quote Sent' ? 'Mark Confirmed'
+      : stage === 'Confirmed' ? 'Close & Archive'
+      : 'Reopen Lead';
 
+    if (isSupabaseConfigured) {
       const { error } = await supabase.from('leads').update({
         stage,
         primary_action_label: label,
         updated_at: new Date().toISOString(),
       }).eq('id', id);
       if (error) throw new Error(`[Rivet] updateLeadStage: ${error.message}`);
+
+      await _logActivity({
+        workspaceId: actor?.workspaceId || DEV_WORKSPACE_ID,
+        actorId: actor?.id,
+        actorName: actor?.name,
+        category: 'lead',
+        title: `Lead stage changed to ${stage}`,
+        description: `Stage progression: → ${stage}`,
+        entityId: id,
+        entityType: 'Lead',
+      });
+
       return this.getLeads();
     }
     return FALLBACK_LEADS.map((l) => (l.id === id ? { ...l, stage } : l));
   },
 
-  async updateLeadDetails(id: string, updates: { quoteAmount?: string; quoteStatus?: string; nextFollowUp?: string }): Promise<Lead[]> {
+  async updateLeadDetails(
+    id: string,
+    updates: { quoteAmount?: string; quoteStatus?: string; nextFollowUp?: string },
+    actor?: { id?: string; name?: string; workspaceId?: string }
+  ): Promise<Lead[]> {
     if (isSupabaseConfigured) {
       const { error } = await supabase.from('leads').update({
         ...(updates.quoteAmount && { quote_amount: updates.quoteAmount }),
@@ -394,6 +609,20 @@ export const ApiService = {
         updated_at: new Date().toISOString(),
       }).eq('id', id);
       if (error) throw new Error(`[Rivet] updateLeadDetails: ${error.message}`);
+
+      if (updates.nextFollowUp) {
+        await _logActivity({
+          workspaceId: actor?.workspaceId || DEV_WORKSPACE_ID,
+          actorId: actor?.id,
+          actorName: actor?.name,
+          category: 'lead',
+          title: 'Lead follow-up rescheduled',
+          description: `Next follow-up: ${updates.nextFollowUp}`,
+          entityId: id,
+          entityType: 'Lead',
+        });
+      }
+
       return this.getLeads();
     }
     return FALLBACK_LEADS.map((l) => (l.id === id ? { ...l, ...updates } : l));
@@ -403,24 +632,16 @@ export const ApiService = {
 
   async getJobs(): Promise<Job[]> {
     if (isSupabaseConfigured) {
-      const { data, error } = await supabase.from('jobs').select('*').order('created_at', { ascending: false });
+      const { data, error } = await supabase
+        .from('jobs')
+        .select('*')
+        .order('created_at', { ascending: false });
       if (error) console.error('[Rivet] getJobs:', error.message);
       if (data && data.length > 0) {
         const jobs = (data as Record<string, unknown>[]).map(mapJob);
         for (const job of jobs) {
-          const { data: notes } = await supabase
-            .from('notes')
-            .select('*')
-            .eq('linked_entity_id', job.id)
-            .order('created_at', { ascending: false });
-          if (notes && notes.length > 0) {
-            job.notes = (notes as Record<string, unknown>[]).map(n => ({
-              id: n.id as string,
-              author: (n.author_name as string) || 'Ops Staff',
-              timestamp: new Date(n.created_at as string).toLocaleString(),
-              text: n.text as string,
-            })) as JobNote[];
-          }
+          const notes = await _loadNotes(job.id);
+          job.notes = notes.map(n => ({ ...n })) as JobNote[];
         }
         return jobs;
       }
@@ -428,13 +649,29 @@ export const ApiService = {
     return FALLBACK_JOBS;
   },
 
-  async updateJobStatus(id: string, status: JobStatus): Promise<Job[]> {
+  async updateJobStatus(
+    id: string,
+    status: JobStatus,
+    actor?: { id?: string; name?: string; workspaceId?: string }
+  ): Promise<Job[]> {
     if (isSupabaseConfigured) {
       const { error } = await supabase.from('jobs').update({
         status,
         updated_at: new Date().toISOString(),
       }).eq('id', id);
       if (error) throw new Error(`[Rivet] updateJobStatus: ${error.message}`);
+
+      await _logActivity({
+        workspaceId: actor?.workspaceId || DEV_WORKSPACE_ID,
+        actorId: actor?.id,
+        actorName: actor?.name,
+        category: 'job',
+        title: `Job status updated to ${status}`,
+        description: `Job ${id} → ${status}`,
+        entityId: id,
+        entityType: 'Job',
+      });
+
       return this.getJobs();
     }
     return FALLBACK_JOBS.map((j) => (j.id === id ? { ...j, status } : j));
@@ -444,7 +681,10 @@ export const ApiService = {
 
   async getTasks(): Promise<TaskRecord[]> {
     if (isSupabaseConfigured) {
-      const { data, error } = await supabase.from('tasks').select('*').order('created_at', { ascending: false });
+      const { data, error } = await supabase
+        .from('tasks')
+        .select('*')
+        .order('created_at', { ascending: false });
       if (error) console.error('[Rivet] getTasks:', error.message);
       if (data && data.length > 0) return (data as Record<string, unknown>[]).map(mapTask);
     }
@@ -463,7 +703,8 @@ export const ApiService = {
       linkedEntityName?: string;
       notes?: string;
     },
-    workspaceId: string = DEV_WORKSPACE_ID
+    workspaceId: string = DEV_WORKSPACE_ID,
+    actor?: { id?: string; name?: string }
   ): Promise<TaskRecord[]> {
     if (isSupabaseConfigured) {
       const { error } = await supabase.from('tasks').insert({
@@ -480,23 +721,47 @@ export const ApiService = {
         notes: task.notes || null,
       });
       if (error) throw new Error(`[Rivet] createTask: ${error.message}`);
+
+      await _logActivity({
+        workspaceId,
+        actorId: actor?.id,
+        actorName: actor?.name,
+        category: 'task',
+        title: 'Task created',
+        description: `"${task.title}" assigned to ${task.assignee}, due ${task.dueDateTime}`,
+        entityType: 'Task',
+      });
+
       return this.getTasks();
     }
-    const newTask: TaskRecord = {
-      id: `tsk-${Date.now()}`,
-      status: 'Open',
-      ...task,
-    };
-    return [newTask, ...FALLBACK_TASKS];
+    return [{ id: `tsk-${Date.now()}`, status: 'Open', ...task }, ...FALLBACK_TASKS];
   },
 
-  async updateTaskStatus(id: string, status: TaskStatus): Promise<TaskRecord[]> {
+  async updateTaskStatus(
+    id: string,
+    status: TaskStatus,
+    actor?: { id?: string; name?: string; workspaceId?: string }
+  ): Promise<TaskRecord[]> {
     if (isSupabaseConfigured) {
       const { error } = await supabase.from('tasks').update({
         status,
         updated_at: new Date().toISOString(),
       }).eq('id', id);
       if (error) throw new Error(`[Rivet] updateTaskStatus: ${error.message}`);
+
+      if (status === 'Done') {
+        await _logActivity({
+          workspaceId: actor?.workspaceId || DEV_WORKSPACE_ID,
+          actorId: actor?.id,
+          actorName: actor?.name,
+          category: 'task',
+          title: 'Task completed',
+          description: `Task marked as Done`,
+          entityId: id,
+          entityType: 'Task',
+        });
+      }
+
       return this.getTasks();
     }
     return FALLBACK_TASKS.map((t) => (t.id === id ? { ...t, status } : t));
@@ -506,24 +771,16 @@ export const ApiService = {
 
   async getPayments(): Promise<PaymentRecord[]> {
     if (isSupabaseConfigured) {
-      const { data, error } = await supabase.from('payments').select('*').order('created_at', { ascending: false });
+      const { data, error } = await supabase
+        .from('payments')
+        .select('*')
+        .order('created_at', { ascending: false });
       if (error) console.error('[Rivet] getPayments:', error.message);
       if (data && data.length > 0) {
         const payments = (data as Record<string, unknown>[]).map(mapPayment);
         for (const payment of payments) {
-          const { data: notes } = await supabase
-            .from('notes')
-            .select('*')
-            .eq('linked_entity_id', payment.id)
-            .order('created_at', { ascending: false });
-          if (notes && notes.length > 0) {
-            payment.notes = (notes as Record<string, unknown>[]).map(n => ({
-              id: n.id as string,
-              author: (n.author_name as string) || 'Ops Staff',
-              timestamp: new Date(n.created_at as string).toLocaleString(),
-              text: n.text as string,
-            })) as PaymentNote[];
-          }
+          const notes = await _loadNotes(payment.id);
+          payment.notes = notes.map(n => ({ ...n })) as PaymentNote[];
         }
         return payments;
       }
@@ -536,15 +793,14 @@ export const ApiService = {
     amount: number,
     method: string,
     noteText?: string,
-    authorId?: string,
-    authorName?: string,
-    workspaceId: string = DEV_WORKSPACE_ID
+    actor?: { id?: string; name?: string; workspaceId?: string }
   ): Promise<PaymentRecord[]> {
+    const workspaceId = actor?.workspaceId || DEV_WORKSPACE_ID;
+
     if (isSupabaseConfigured) {
-      // Fetch current payment to compute new totals
       const { data: current, error: fetchErr } = await supabase
         .from('payments')
-        .select('amount_paid, total_amount, balance_due')
+        .select('amount_paid, total_amount, balance_due, payment_code, service_title')
         .eq('id', id)
         .single();
       if (fetchErr || !current) throw new Error(`[Rivet] recordPaymentCollection fetch: ${fetchErr?.message}`);
@@ -562,20 +818,30 @@ export const ApiService = {
       }).eq('id', id);
       if (updateErr) throw new Error(`[Rivet] recordPaymentCollection update: ${updateErr.message}`);
 
-      // Persist note
+      const noteBody = noteText || `Recorded ₹${amount.toLocaleString('en-IN')} via ${method}`;
       await supabase.from('notes').insert({
         workspace_id: workspaceId,
         linked_entity_id: id,
         linked_entity_type: 'Payment',
-        author_id: authorId || null,
-        author_name: authorName || 'Janai Desk',
-        text: noteText || `Recorded ₹${amount.toLocaleString('en-IN')} payment via ${method}`,
+        author_id: actor?.id || null,
+        author_name: actor?.name || 'Janai Desk',
+        text: noteBody,
+      });
+
+      await _logActivity({
+        workspaceId,
+        actorId: actor?.id,
+        actorName: actor?.name,
+        category: 'payment',
+        title: 'Payment recorded',
+        description: `₹${amount.toLocaleString('en-IN')} via ${method} — ${current.service_title}. Status: ${newStatus}`,
+        entityId: id,
+        entityType: 'Payment',
       });
 
       return this.getPayments();
     }
 
-    // Offline fallback
     return FALLBACK_PAYMENTS.map((p) => {
       if (p.id !== id) return p;
       const newPaid = p.amountPaid + amount;
@@ -593,7 +859,7 @@ export const ApiService = {
     authorId?: string,
     authorName?: string,
     workspaceId: string = DEV_WORKSPACE_ID
-  ): Promise<{ id: string; author: string; timestamp: string; text: string }> {
+  ): Promise<LeadNote> {
     if (isSupabaseConfigured) {
       const { data, error } = await supabase.from('notes').insert({
         workspace_id: workspaceId,
@@ -606,11 +872,6 @@ export const ApiService = {
       if (error) throw new Error(`[Rivet] addNote: ${error.message}`);
       return mapNote(data as Record<string, unknown>);
     }
-    return {
-      id: `n-${Date.now()}`,
-      author: authorName || 'Janai Desk',
-      timestamp: 'Just now',
-      text,
-    };
+    return { id: `n-${Date.now()}`, author: authorName || 'Janai Desk', timestamp: 'Just now', text };
   },
 };

@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
-import { CustomerRecord, Lead, Job, PaymentRecord, TaskRecord, TaskType, TaskPriority, LeadStage, JobStatus, PaymentStatus } from '../../types/rivet';
+import { CustomerRecord, Lead, Job, PaymentRecord, TaskRecord, TaskType, TaskPriority, LeadStage, JobStatus } from '../../types/rivet';
 import { getCustomerOperationalAccount } from '../../utils/customerMapper';
 import { Badge } from '../ui/Badge';
 import { Button } from '../ui/Button';
 import { Card } from '../ui/Card';
 import { EmptyState } from '../ui/EmptyState';
 import { TaskItem } from '../ui/TaskItem';
+import { ApiService } from '../../services/api';
+import { useAuth } from '../../context/AuthContext';
 
 interface CustomerAccountViewProps {
   customer: CustomerRecord;
@@ -36,6 +38,8 @@ export const CustomerAccountView: React.FC<CustomerAccountViewProps> = ({
   onUpdateJobStatus,
   onUpdatePaymentRecord,
 }) => {
+  const { user } = useAuth();
+  const actor = { id: user?.id, name: user?.fullName, workspaceId: user?.workspaceId };
   const [tasksList, setTasksList] = useState<TaskRecord[]>(allTasks);
   const [noteInput, setNoteInput] = useState('');
   const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
@@ -83,11 +87,9 @@ export const CustomerAccountView: React.FC<CustomerAccountViewProps> = ({
     e.preventDefault();
     if (!reminderTitle.trim()) return;
 
-    const newTask: TaskRecord = {
-      id: `tsk-${Date.now()}`,
+    ApiService.createTask({
       title: reminderTitle.trim(),
       type: reminderType,
-      status: 'Open',
       priority: reminderPriority,
       dueDateTime: reminderDue,
       assignee: 'Ops Desk',
@@ -95,18 +97,19 @@ export const CustomerAccountView: React.FC<CustomerAccountViewProps> = ({
       linkedEntityType: 'Customer',
       linkedEntityName: customer.name,
       notes: `Scheduled reminder for ${customer.name}`,
-    };
+    }, actor.workspaceId, actor)
+      .then((updated) => setTasksList(updated))
+      .catch(console.error);
 
-    setTasksList((prev) => [newTask, ...prev]);
     setReminderTitle('');
     setShowAddReminderForm(false);
     showToast(`Created ${reminderType} reminder for ${customer.name}`);
   };
 
   const handleTaskStatusChange = (task: TaskRecord, newStatus: TaskRecord['status']) => {
-    setTasksList((prev) =>
-      prev.map((t) => (t.id === task.id ? { ...t, status: newStatus } : t))
-    );
+    ApiService.updateTaskStatus(task.id, newStatus as TaskRecord['status'], actor)
+      .then((updated) => setTasksList(updated))
+      .catch(console.error);
     showToast(`Marked reminder as ${newStatus}`);
   };
 

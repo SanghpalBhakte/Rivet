@@ -1,6 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { INITIAL_CUSTOMERS, INITIAL_LEADS, INITIAL_JOBS, INITIAL_PAYMENTS, INITIAL_TASKS } from '../../data/mockData';
-import { CustomerRecord, CustomerHealthStatus, SimulationMode, Lead, Job, PaymentRecord, TaskRecord, LeadStage, JobStatus, PaymentStatus } from '../../types/rivet';
+import { CustomerRecord, CustomerHealthStatus, SimulationMode, Lead, Job, PaymentRecord, TaskRecord, LeadStage, JobStatus } from '../../types/rivet';
 import { PageHeader } from '../ui/PageHeader';
 import { Card } from '../ui/Card';
 import { EmptyState } from '../ui/EmptyState';
@@ -8,13 +7,17 @@ import { SkeletonRow } from '../ui/Skeleton';
 import { CustomerRow } from './CustomerRow';
 import { CustomerAccountView } from './CustomerAccountView';
 import { ApiService } from '../../services/api';
+import { useAuth } from '../../context/AuthContext';
 
 export const CustomersView: React.FC = () => {
-  const [customers, setCustomers] = useState<CustomerRecord[]>(INITIAL_CUSTOMERS);
-  const [leads, setLeads] = useState<Lead[]>(INITIAL_LEADS);
-  const [jobs, setJobs] = useState<Job[]>(INITIAL_JOBS);
-  const [payments, setPayments] = useState<PaymentRecord[]>(INITIAL_PAYMENTS);
-  const [tasks, setTasks] = useState<TaskRecord[]>(INITIAL_TASKS);
+  const { user } = useAuth();
+  const actor = { id: user?.id, name: user?.fullName, workspaceId: user?.workspaceId };
+
+  const [customers, setCustomers] = useState<CustomerRecord[]>([]);
+  const [leads, setLeads] = useState<Lead[]>([]);
+  const [jobs, setJobs] = useState<Job[]>([]);
+  const [payments, setPayments] = useState<PaymentRecord[]>([]);
+  const [tasks, setTasks] = useState<TaskRecord[]>([]);
 
   const [searchQuery, setSearchQuery] = useState('');
   const [healthFilter, setHealthFilter] = useState<'All' | CustomerHealthStatus>('All');
@@ -22,7 +25,6 @@ export const CustomersView: React.FC = () => {
   const [simMode, setSimMode] = useState<SimulationMode>('normal');
 
   useEffect(() => {
-    // Fetch persistent data on mount
     ApiService.getCustomers().then(setCustomers);
     ApiService.getLeads().then(setLeads);
     ApiService.getJobs().then(setJobs);
@@ -47,100 +49,78 @@ export const CustomersView: React.FC = () => {
     });
   }, [customers, healthFilter, searchQuery]);
 
-  // Add note handler
+  // Add customer note — persists to Supabase + logs activity
   const handleAddNote = (customerId: string, noteText: string) => {
-    const newHistoryItem = {
-      id: `ch-${Date.now()}`,
-      date: 'Just now',
-      type: 'note' as const,
-      title: 'Internal Ops Note Added',
-      details: noteText,
-      badgeLabel: 'Note',
-    };
-    setCustomers((prev) =>
-      prev.map((c) =>
-        c.id === customerId
-          ? { ...c, history: [newHistoryItem, ...c.history] }
-          : c
-      )
-    );
-    if (selectedCustomer && selectedCustomer.id === customerId) {
-      setSelectedCustomer((prev) =>
-        prev
-          ? { ...prev, history: [newHistoryItem, ...prev.history] }
-          : null
-      );
-    }
+    ApiService.addCustomerNote(customerId, noteText, actor)
+      .then((newNote) => {
+        const historyItem = {
+          id: newNote.id,
+          date: newNote.timestamp,
+          type: 'note' as const,
+          title: 'Internal Ops Note Added',
+          details: newNote.text,
+          badgeLabel: 'Note',
+        };
+        setCustomers((prev) =>
+          prev.map((c) =>
+            c.id === customerId ? { ...c, history: [historyItem, ...c.history] } : c
+          )
+        );
+        if (selectedCustomer?.id === customerId) {
+          setSelectedCustomer((prev) =>
+            prev ? { ...prev, history: [historyItem, ...prev.history] } : null
+          );
+        }
+      })
+      .catch(console.error);
   };
 
-  // Edit note handler
+  // Edit note — local only for now (DB note edit deferred to Phase 4)
   const handleEditNote = (noteId: string, newText: string) => {
     if (!selectedCustomer) return;
     const customerId = selectedCustomer.id;
     setCustomers((prev) =>
       prev.map((c) =>
         c.id === customerId
-          ? {
-              ...c,
-              history: c.history.map((h) => (h.id === noteId ? { ...h, details: newText } : h)),
-            }
+          ? { ...c, history: c.history.map((h) => (h.id === noteId ? { ...h, details: newText } : h)) }
           : c
       )
     );
     setSelectedCustomer((prev) =>
-      prev
-        ? {
-            ...prev,
-            history: prev.history.map((h) => (h.id === noteId ? { ...h, details: newText } : h)),
-          }
-        : null
+      prev ? { ...prev, history: prev.history.map((h) => (h.id === noteId ? { ...h, details: newText } : h)) } : null
     );
   };
 
-  // Follow-up date update handler
+  // Follow-up update — persists to Supabase
   const handleUpdateFollowUp = (customerId: string, nextTime: string) => {
-    setCustomers((prev) =>
-      prev.map((c) => (c.id === customerId ? { ...c, nextFollowUp: nextTime } : c))
-    );
-    if (selectedCustomer && selectedCustomer.id === customerId) {
-      setSelectedCustomer((prev) => (prev ? { ...prev, nextFollowUp: nextTime } : null));
-    }
-  };
-
-  // Lead stage update handler
-  const handleUpdateLeadStage = (leadId: string, newStage: LeadStage) => {
-    setLeads((prev) =>
-      prev.map((l) => (l.id === leadId ? { ...l, stage: newStage } : l))
-    );
-  };
-
-  // Job status update handler
-  const handleUpdateJobStatus = (jobId: string, newStatus: JobStatus) => {
-    setJobs((prev) =>
-      prev.map((j) => (j.id === jobId ? { ...j, status: newStatus } : j))
-    );
-  };
-
-  // Payment record update handler
-  const handleUpdatePaymentRecord = (paymentId: string, amountPaid: number, method: string) => {
-    setPayments((prev) =>
-      prev.map((p) => {
-        if (p.id !== paymentId) return p;
-        const newPaid = p.amountPaid + amountPaid;
-        const newBalance = Math.max(0, p.totalAmount - newPaid);
-        let newStatus: PaymentStatus = p.status;
-        if (newBalance === 0) newStatus = 'Paid';
-        else if (newPaid > 0) newStatus = 'Partial';
-
-        return {
-          ...p,
-          amountPaid: newPaid,
-          balanceDue: newBalance,
-          paymentMethod: method,
-          status: newStatus,
-        };
+    ApiService.updateCustomerFollowUp(customerId, nextTime, actor)
+      .then((updated) => {
+        setCustomers(updated);
+        const found = updated.find((c) => c.id === customerId) || null;
+        if (selectedCustomer?.id === customerId) setSelectedCustomer(found);
       })
-    );
+      .catch(console.error);
+  };
+
+  // Lead stage update — persists to Supabase
+  const handleUpdateLeadStage = (leadId: string, newStage: LeadStage) => {
+    ApiService.updateLeadStage(leadId, newStage, actor)
+      .then(setLeads)
+      .catch(console.error);
+  };
+
+  // Job status update — persists to Supabase
+  const handleUpdateJobStatus = (jobId: string, newStatus: JobStatus) => {
+    ApiService.updateJobStatus(jobId, newStatus, actor)
+      .then(setJobs)
+      .catch(console.error);
+  };
+
+  // Payment record update — persists to Supabase
+  const handleUpdatePaymentRecord = (paymentId: string, amountPaid: number, method: string) => {
+    ApiService.recordPaymentCollection(paymentId, amountPaid, method, undefined, actor)
+      .then(setPayments)
+      .catch(console.error);
   };
 
   // Health counts for tab badges
