@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { INITIAL_TASKS } from '../../data/mockData';
 import { TaskRecord, TaskStatus, TaskType, TaskPriority, SimulationMode } from '../../types/rivet';
 import { PageHeader } from '../ui/PageHeader';
@@ -7,6 +7,7 @@ import { Button } from '../ui/Button';
 import { EmptyState } from '../ui/EmptyState';
 import { SkeletonRow } from '../ui/Skeleton';
 import { TaskItem } from '../ui/TaskItem';
+import { ApiService } from '../../services/api';
 
 export const TasksView: React.FC = () => {
   const [tasks, setTasks] = useState<TaskRecord[]>(INITIAL_TASKS);
@@ -17,6 +18,10 @@ export const TasksView: React.FC = () => {
   const [assigneeFilter, setAssigneeFilter] = useState<string>('All');
   const [simMode, setSimMode] = useState<SimulationMode>('normal');
   const [actionMsg, setActionMsg] = useState<string | null>(null);
+
+  useEffect(() => {
+    ApiService.getTasks().then(setTasks);
+  }, []);
 
   // New Task Form Modal/Inline state
   const [showCreateModal, setShowCreateModal] = useState(false);

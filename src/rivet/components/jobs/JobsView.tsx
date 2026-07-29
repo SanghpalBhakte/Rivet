@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { INITIAL_JOBS } from '../../data/mockData';
 import { Job, JobStatus, SimulationMode } from '../../types/rivet';
 import { PageHeader } from '../ui/PageHeader';
@@ -7,6 +7,7 @@ import { EmptyState } from '../ui/EmptyState';
 import { SkeletonRow } from '../ui/Skeleton';
 import { JobRow } from './JobRow';
 import { JobDetailDrawer } from './JobDetailDrawer';
+import { ApiService } from '../../services/api';
 
 export const JobsView: React.FC = () => {
   const [jobs, setJobs] = useState<Job[]>(INITIAL_JOBS);
@@ -14,6 +15,10 @@ export const JobsView: React.FC = () => {
   const [statusFilter, setStatusFilter] = useState<'All' | JobStatus>('All');
   const [selectedJob, setSelectedJob] = useState<Job | null>(null);
   const [simMode, setSimMode] = useState<SimulationMode>('normal');
+
+  useEffect(() => {
+    ApiService.getJobs().then(setJobs);
+  }, []);
 
   // Filter jobs by search query and status filter
   const filteredJobs = useMemo(() => {

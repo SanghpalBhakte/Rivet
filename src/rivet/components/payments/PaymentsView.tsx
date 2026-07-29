@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { INITIAL_PAYMENTS } from '../../data/mockData';
 import { PaymentRecord, PaymentStatus, SimulationMode } from '../../types/rivet';
 import { PageHeader } from '../ui/PageHeader';
@@ -7,6 +7,7 @@ import { EmptyState } from '../ui/EmptyState';
 import { SkeletonRow } from '../ui/Skeleton';
 import { PaymentRow } from './PaymentRow';
 import { PaymentDetailDrawer } from './PaymentDetailDrawer';
+import { ApiService } from '../../services/api';
 
 export const PaymentsView: React.FC = () => {
   const [payments, setPayments] = useState<PaymentRecord[]>(INITIAL_PAYMENTS);
@@ -14,6 +15,10 @@ export const PaymentsView: React.FC = () => {
   const [statusFilter, setStatusFilter] = useState<'All' | PaymentStatus>('All');
   const [selectedPayment, setSelectedPayment] = useState<PaymentRecord | null>(null);
   const [simMode, setSimMode] = useState<SimulationMode>('normal');
+
+  useEffect(() => {
+    ApiService.getPayments().then(setPayments);
+  }, []);
 
   // Filter payments by search query and status filter
   const filteredPayments = useMemo(() => {

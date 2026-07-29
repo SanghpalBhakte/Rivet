@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { INITIAL_LEADS } from '../../data/mockData';
 import { Lead, LeadStage, SimulationMode } from '../../types/rivet';
 import { PageHeader } from '../ui/PageHeader';
@@ -9,6 +9,7 @@ import { LeadRow } from './LeadRow';
 import { LeadDetailDrawer } from './LeadDetailDrawer';
 import { NewInquiryModal } from './NewInquiryModal';
 import { Button } from '../ui/Button';
+import { ApiService } from '../../services/api';
 
 export const LeadsView: React.FC = () => {
   const [leads, setLeads] = useState<Lead[]>(INITIAL_LEADS);
@@ -18,32 +19,13 @@ export const LeadsView: React.FC = () => {
   const [simMode, setSimMode] = useState<SimulationMode>('normal');
   const [isNewInquiryOpen, setIsNewInquiryOpen] = useState(false);
 
+  useEffect(() => {
+    ApiService.getLeads().then(setLeads);
+  }, []);
+
   // Stage transition workflow handler
   const handleStageChange = (leadId: string, newStage: LeadStage) => {
-    setLeads((prevLeads) =>
-      prevLeads.map((l) => {
-        if (l.id !== leadId) return l;
-
-        let actionLabel = 'View Details';
-        if (newStage === 'New') actionLabel = 'Mark Contacted';
-        else if (newStage === 'Contacted') actionLabel = 'Send Quote';
-        else if (newStage === 'Quote Sent') actionLabel = 'Mark Confirmed';
-        else if (newStage === 'Confirmed') actionLabel = 'Close & Archive';
-        else if (newStage === 'Closed' || newStage === 'Lost') actionLabel = 'Reopen Lead';
-
-        const updatedLead: Lead = {
-          ...l,
-          stage: newStage,
-          primaryActionLabel: actionLabel,
-        };
-
-        if (selectedLead && selectedLead.id === leadId) {
-          setSelectedLead(updatedLead);
-        }
-
-        return updatedLead;
-      })
-    );
+    ApiService.updateLeadStage(leadId, newStage).then(setLeads);
   };
 
   // Follow-up date/time schedule handler
