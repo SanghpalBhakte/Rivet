@@ -1,5 +1,6 @@
 import React from 'react';
 import { ActiveModule } from '../../types/rivet';
+import { BUILD_INFO } from '../../config/buildInfo';
 
 interface SidebarProps {
   activeTab?: ActiveModule;
@@ -74,11 +75,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </button>
       </nav>
 
-      {/* Footer System Status */}
+      {/* Footer System Status & Deployment Marker */}
       <div className="rv-sidebar__footer">
-        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '4px' }}>
           <span className="rv-sidebar__status-dot" aria-hidden="true" />
           <span>Operations Active</span>
+        </div>
+        <div style={{ fontSize: '10px', color: 'var(--rv-text-dim)', fontFamily: 'monospace', letterSpacing: '0.02em' }}>
+          v{BUILD_INFO.version} • cf-pages@{BUILD_INFO.commitHash}
         </div>
       </div>
     </aside>
