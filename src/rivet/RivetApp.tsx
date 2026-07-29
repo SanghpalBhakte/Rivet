@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import './styles/rivet.css';
 import { ActiveModule } from './types/rivet';
 import { AppShell } from './components/shell/AppShell';
@@ -13,8 +13,44 @@ interface RivetAppProps {
   onBackToPortfolio?: () => void;
 }
 
+const getInitialTab = (): ActiveModule => {
+  if (typeof window === 'undefined') return 'dashboard';
+  
+  const path = window.location.pathname.replace(/^\/+|\/+$/g, '').toLowerCase();
+  const validTabs: ActiveModule[] = ['dashboard', 'leads', 'jobs', 'payments', 'customers', 'tasks'];
+  
+  if (validTabs.includes(path as ActiveModule)) {
+    return path as ActiveModule;
+  }
+
+  const hash = window.location.hash.replace(/^#\/?/, '').toLowerCase();
+  if (validTabs.includes(hash as ActiveModule)) {
+    return hash as ActiveModule;
+  }
+
+  return 'dashboard';
+};
+
 export const RivetApp: React.FC<RivetAppProps> = ({ onBackToPortfolio }) => {
-  const [activeTab, setActiveTab] = useState<ActiveModule>('dashboard');
+  const [activeTab, setActiveTab] = useState<ActiveModule>(getInitialTab);
+
+  useEffect(() => {
+    const handlePopState = () => {
+      setActiveTab(getInitialTab());
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
+
+  const handleSelectTab = (tab: ActiveModule) => {
+    setActiveTab(tab);
+    if (typeof window !== 'undefined') {
+      const targetPath = tab === 'dashboard' ? '/' : `/${tab}`;
+      if (window.location.pathname !== targetPath) {
+        window.history.pushState({}, '', targetPath);
+      }
+    }
+  };
 
   return (
     <div style={{ position: 'relative' }}>
@@ -52,7 +88,7 @@ export const RivetApp: React.FC<RivetAppProps> = ({ onBackToPortfolio }) => {
         </div>
       )}
 
-      <AppShell activeTab={activeTab} onSelectTab={setActiveTab}>
+      <AppShell activeTab={activeTab} onSelectTab={handleSelectTab}>
         {activeTab === 'dashboard' && <DashboardView />}
         {activeTab === 'leads' && <LeadsView />}
         {activeTab === 'jobs' && <JobsView />}
@@ -63,5 +99,6 @@ export const RivetApp: React.FC<RivetAppProps> = ({ onBackToPortfolio }) => {
     </div>
   );
 };
+
 
 export default RivetApp;

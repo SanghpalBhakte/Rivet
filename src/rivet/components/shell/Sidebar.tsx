@@ -20,7 +20,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </div>
         <div className="rv-sidebar__workspace">
           <span style={{ fontWeight: 600, color: 'var(--rv-text-primary)' }}>Janai Tours & Ops</span>
-          <span style={{ fontSize: '10px', color: 'var(--rv-text-dim)' }}>Nagpur</span>
+          <span style={{ fontSize: '10px', color: 'var(--rv-text-dim)' }}>Central HQ</span>
         </div>
       </div>
 

@@ -36,18 +36,18 @@ export const PaymentRow: React.FC<PaymentRowProps> = ({
     >
       {/* Payment Record Info */}
       <div className="rv-queue-item__main">
-        <div className="rv-queue-item__meta-row">
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
           <Badge variant={getBadgeVariant(payment.status)}>
             {payment.status.toUpperCase()}
           </Badge>
           <span className="rv-tabular" style={{ fontSize: '11px', color: 'var(--rv-text-muted)', fontWeight: 600 }}>
             {payment.paymentCode} • {payment.jobCode}
           </span>
-          <span className="rv-queue-item__client">{payment.customerName}</span>
-          <span className="rv-queue-item__phone rv-tabular">{payment.customerPhone}</span>
+          <span style={{ fontSize: '11px', color: 'var(--rv-text-dim)' }}>•</span>
+          <span className="rv-queue-item__client" style={{ fontSize: '11px', fontWeight: 600, color: 'var(--rv-text-secondary)' }}>{payment.customerName}</span>
         </div>
 
-        <h4 className="rv-queue-item__title" style={{ fontWeight: 600, color: 'var(--rv-text-primary)' }}>
+        <h4 className="rv-queue-item__title" style={{ margin: 0, marginBottom: '2px', fontSize: '13px', fontWeight: 600, color: 'var(--rv-text-primary)' }}>
           {payment.serviceTitle}
         </h4>
 

@@ -1,7 +1,7 @@
 {
   "system": "Rivet Operations Control Room",
   "organization": "Janai Tours & Service Operations",
-  "location": "Nagpur, India",
+  "location": "Central Ops",
   "version": "1.0.0",
   "lastUpdated": "2026-07-27T02:08:00Z",
   "pipelineStages": [
@@ -79,7 +79,7 @@
     {
       "id": "q-105",
       "type": "job",
-      "title": "Nagpur Airport Pickup — Flight AI-441",
+      "title": "Airport Pickup — Flight AI-441",
       "context": "Innova Crysta dispatched · Driver: Suresh M.",
       "clientName": "Priya Mehta",
       "clientPhone": "+91 91588 22104",

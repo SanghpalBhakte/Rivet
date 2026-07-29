@@ -46,18 +46,17 @@ export const LeadRow: React.FC<LeadRowProps> = ({
     >
       {/* Customer Info & Service Request */}
       <div className="rv-queue-item__main">
-        <div className="rv-queue-item__meta-row">
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
           <Badge variant={getBadgeVariant(lead.stage)}>
             {lead.stage.toUpperCase()}
           </Badge>
-          <Badge variant="neutral">
-            {lead.source}
-          </Badge>
-          <span className="rv-queue-item__client">{lead.customerName}</span>
-          <span className="rv-queue-item__phone rv-tabular">{lead.customerPhone}</span>
+          <span className="rv-queue-item__client" style={{ fontSize: '11px', fontWeight: 600, color: 'var(--rv-text-secondary)' }}>{lead.customerName}</span>
+          <span className="rv-queue-item__phone rv-tabular" style={{ fontSize: '11px', color: 'var(--rv-text-muted)' }}>{lead.customerPhone}</span>
+          <span style={{ fontSize: '11px', color: 'var(--rv-text-dim)' }}>•</span>
+          <span style={{ fontSize: '11px', color: 'var(--rv-text-muted)' }}>{lead.source}</span>
         </div>
 
-        <h4 className="rv-queue-item__title" style={{ fontWeight: 600, color: 'var(--rv-text-primary)' }}>
+        <h4 className="rv-queue-item__title" style={{ margin: 0, marginBottom: '2px', fontSize: '13px', fontWeight: 600, color: 'var(--rv-text-primary)' }}>
           {lead.serviceTitle}
         </h4>
 

@@ -85,7 +85,7 @@ export const NewInquiryModal: React.FC<NewInquiryModalProps> = ({
           id: `n-${Date.now()}`,
           author: 'System',
           timestamp: 'Just now',
-          text: `Inquiry captured from ${source}. Pickup: ${pickupLocation || 'Nagpur'}. Travel Date: ${travelDate || 'Flexible'}. ${notes ? `Notes: ${notes}` : ''}`,
+          text: `Inquiry captured from ${source}. Pickup: ${pickupLocation || 'Central Terminal'}. Travel Date: ${travelDate || 'Flexible'}. ${notes ? `Notes: ${notes}` : ''}`,
         },
       ],
     };
@@ -211,7 +211,7 @@ export const NewInquiryModal: React.FC<NewInquiryModalProps> = ({
                 <input
                   type="text"
                   className="rv-lead-note-input"
-                  placeholder="e.g. Nagpur Airport / Dharampeth"
+                  placeholder="e.g. Airport Terminal / City Center"
                   value={pickupLocation}
                   onChange={(e) => setPickupLocation(e.target.value)}
                   style={{ width: '100%' }}

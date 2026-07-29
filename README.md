@@ -1,6 +1,6 @@
 # ⚙️ Rivet — Operations Control Room
 
-> **Flagship "Boring Systems" Application** built first for **Janai Tours & Service Operations** (Nagpur, India) and adaptable for small service businesses.
+> **Flagship "Boring Systems" Application** built first for **Janai Tours & Service Operations** and adaptable for small service businesses.
 
 ![Rivet Dashboard](public/data/janai-ops-db.json)
 

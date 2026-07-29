@@ -98,16 +98,18 @@ export const TodayQueue: React.FC<TodayQueueProps> = ({
             <li key={item.id} className="rv-queue-item">
               {/* Item Details */}
               <div className="rv-queue-item__main">
-                <div className="rv-queue-item__meta-row">
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
                   <Badge variant={item.type}>
-                    {item.type === 'overdue' ? 'OVERDUE' : item.type === 'callback' ? 'CALLBACK' : 'TODAY JOB'}
+                    {item.type === 'overdue' ? 'OVERDUE' : item.type === 'callback' ? 'CALLBACK' : 'JOB'}
                   </Badge>
-                  <span className="rv-queue-item__client">{item.clientName}</span>
-                  <span className="rv-queue-item__phone rv-tabular">{item.clientPhone}</span>
+                  <span className="rv-queue-item__client" style={{ fontSize: '11px', fontWeight: 600, color: 'var(--rv-text-secondary)' }}>{item.clientName}</span>
+                  <span className="rv-queue-item__phone rv-tabular" style={{ fontSize: '11px', color: 'var(--rv-text-muted)' }}>{item.clientPhone}</span>
                 </div>
-                <h4 className="rv-queue-item__title">{item.title}</h4>
-                <div className="rv-queue-item__context">
-                  Context: {item.context}
+                <h4 className="rv-queue-item__title" style={{ margin: 0, marginBottom: '2px', fontSize: '13px', fontWeight: 600, color: 'var(--rv-text-primary)' }}>
+                  {item.title}
+                </h4>
+                <div className="rv-queue-item__context" style={{ fontSize: '12px', color: 'var(--rv-text-muted)' }}>
+                  {item.context}
                 </div>
               </div>
 
