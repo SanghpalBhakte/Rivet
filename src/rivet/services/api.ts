@@ -874,4 +874,224 @@ export const ApiService = {
     }
     return { id: `n-${Date.now()}`, author: authorName || 'Janai Desk', timestamp: 'Just now', text };
   },
+
+  /* ── NOTE EDIT PERSISTENCE ─────────────────────────────────────────────── */
+
+  async updateNote(
+    noteId: string,
+    text: string,
+    actor?: { id?: string; name?: string; workspaceId?: string }
+  ): Promise<LeadNote> {
+    if (isSupabaseConfigured) {
+      const { data, error } = await supabase
+        .from('notes')
+        .update({ text, updated_at: new Date().toISOString() })
+        .eq('id', noteId)
+        .select()
+        .single();
+      if (error) throw new Error(`[Rivet] updateNote: ${error.message}`);
+      return mapNote(data as Record<string, unknown>);
+    }
+    return { id: noteId, author: actor?.name || 'Janai Desk', timestamp: 'Just now', text };
+  },
+
+  /* ── DASHBOARD METRICS ─────────────────────────────────────────────────── */
+
+  async getDashboardMetrics(
+    workspaceId: string = DEV_WORKSPACE_ID
+  ): Promise<{
+    metrics: Array<{ id: string; label: string; value: string | number; subtext: string; urgent: boolean }>;
+    pipelineStages: Array<{ stage: string; count: number }>;
+  }> {
+    if (!isSupabaseConfigured) {
+      return {
+        metrics: [
+          { id: 'm-1', label: 'Unassigned Inquiries', value: 0, subtext: 'Requires quote response', urgent: false },
+          { id: 'm-2', label: 'Pending Follow-ups', value: 0, subtext: 'No callbacks pending', urgent: false },
+          { id: 'm-3', label: 'Active Jobs Today', value: 0, subtext: 'No vehicles in transit', urgent: false },
+          { id: 'm-4', label: 'Outstanding Balance', value: '₹0', subtext: 'All clear today', urgent: false },
+        ],
+        pipelineStages: [],
+      };
+    }
+
+    // Run counts in parallel
+    const [leadsRes, tasksRes, jobsRes, paymentsRes, pipelineRes] = await Promise.all([
+      // Unassigned inquiries = leads in 'New' stage
+      supabase
+        .from('leads')
+        .select('*', { count: 'exact', head: true })
+        .eq('workspace_id', workspaceId)
+        .eq('stage', 'New'),
+
+      // Pending follow-ups = Overdue + Due Soon tasks
+      supabase
+        .from('tasks')
+        .select('*', { count: 'exact', head: true })
+        .eq('workspace_id', workspaceId)
+        .in('status', ['Overdue', 'Due Soon']),
+
+      // Active jobs today = Scheduled + In Progress
+      supabase
+        .from('jobs')
+        .select('*', { count: 'exact', head: true })
+        .eq('workspace_id', workspaceId)
+        .in('status', ['Scheduled', 'In Progress']),
+
+      // Outstanding balance sum
+      supabase
+        .from('payments')
+        .select('balance_due')
+        .eq('workspace_id', workspaceId)
+        .in('status', ['Partial', 'Due Soon', 'Overdue']),
+
+      // Pipeline stage distribution
+      supabase
+        .from('leads')
+        .select('stage')
+        .eq('workspace_id', workspaceId)
+        .not('stage', 'in', '("Lost")')  ,
+    ]);
+
+    const newLeads = leadsRes.count ?? 0;
+    const pendingTasks = tasksRes.count ?? 0;
+    const activeJobs = jobsRes.count ?? 0;
+
+    const totalBalance = ((paymentsRes.data ?? []) as Array<{ balance_due: number }>)
+      .reduce((sum, p) => sum + Number(p.balance_due || 0), 0);
+    const balanceStr = totalBalance > 0
+      ? `₹${totalBalance.toLocaleString('en-IN')}`
+      : '₹0';
+
+    // Aggregate pipeline counts
+    const stageCounts: Record<string, number> = {};
+    for (const row of (pipelineRes.data ?? []) as Array<{ stage: string }>) {
+      stageCounts[row.stage] = (stageCounts[row.stage] || 0) + 1;
+    }
+    const STAGE_ORDER = ['New', 'Contacted', 'Quote Sent', 'Confirmed', 'Closed'];
+    const pipelineStages = STAGE_ORDER.map((stage) => ({ stage, count: stageCounts[stage] ?? 0 }));
+
+    return {
+      metrics: [
+        {
+          id: 'm-1',
+          label: 'Unassigned Inquiries',
+          value: newLeads,
+          subtext: newLeads > 0 ? `${newLeads} awaiting first contact` : 'All leads assigned',
+          urgent: newLeads > 2,
+        },
+        {
+          id: 'm-2',
+          label: 'Pending Follow-ups',
+          value: pendingTasks,
+          subtext: pendingTasks > 0 ? `${pendingTasks} overdue or due soon` : 'Queue clear',
+          urgent: pendingTasks > 0,
+        },
+        {
+          id: 'm-3',
+          label: 'Active Jobs',
+          value: activeJobs,
+          subtext: activeJobs > 0 ? `${activeJobs} vehicles active` : 'No vehicles in transit',
+          urgent: false,
+        },
+        {
+          id: 'm-4',
+          label: 'Outstanding Balance',
+          value: balanceStr,
+          subtext: totalBalance > 0 ? 'Pending collection' : 'All clear today',
+          urgent: totalBalance > 0,
+        },
+      ],
+      pipelineStages,
+    };
+  },
+
+  /* ── JOBS CREATE ───────────────────────────────────────────────────────── */
+
+  async createJob(
+    job: {
+      customerName: string;
+      customerPhone: string;
+      serviceTitle: string;
+      scheduledDateTime: string;
+      pickupLocation: string;
+      dropLocation: string;
+      driverName?: string;
+      vehicleDetails?: string;
+      totalAmount: number;
+      advancePaid?: number;
+    },
+    workspaceId: string = DEV_WORKSPACE_ID,
+    actor?: { id?: string; name?: string }
+  ): Promise<Job[]> {
+    if (isSupabaseConfigured) {
+      // Generate a sequential-style job code
+      const { count } = await supabase
+        .from('jobs')
+        .select('*', { count: 'exact', head: true })
+        .eq('workspace_id', workspaceId);
+      const jobCode = `JOB-${String((count ?? 0) + 1).padStart(3, '0')}`;
+
+      const advance = job.advancePaid ?? 0;
+      const due = job.totalAmount - advance;
+
+      const { error } = await supabase.from('jobs').insert({
+        workspace_id: workspaceId,
+        job_code: jobCode,
+        customer_name: job.customerName,
+        customer_phone: job.customerPhone,
+        service_title: job.serviceTitle,
+        scheduled_date_time: job.scheduledDateTime,
+        status: 'Scheduled',
+        driver_name: job.driverName || 'Unassigned',
+        vehicle_details: job.vehicleDetails || 'TBD',
+        pickup_location: job.pickupLocation,
+        drop_location: job.dropLocation,
+        total_amount: job.totalAmount,
+        advance_paid: advance,
+        due_amount: due,
+        payment_method: 'UPI',
+        payment_status: due === 0 ? 'Paid' : advance > 0 ? 'Partial' : 'Pending',
+        primary_action_label: 'Dispatch Vehicle',
+      });
+      if (error) throw new Error(`[Rivet] createJob: ${error.message}`);
+
+      await _logActivity({
+        workspaceId,
+        actorId: actor?.id,
+        actorName: actor?.name,
+        category: 'job',
+        title: 'New job created',
+        description: `${jobCode} — ${job.serviceTitle} for ${job.customerName} at ${job.scheduledDateTime}`,
+        entityType: 'Job',
+      });
+
+      return this.getJobs();
+    }
+
+    // Offline fallback
+    const offlineJob: Job = {
+      id: `job-${Date.now()}`,
+      jobCode: `JOB-OFF-${Date.now()}`,
+      customerName: job.customerName,
+      customerPhone: job.customerPhone,
+      serviceTitle: job.serviceTitle,
+      scheduledDateTime: job.scheduledDateTime,
+      status: 'Scheduled',
+      driverName: job.driverName || 'Unassigned',
+      vehicleDetails: job.vehicleDetails || 'TBD',
+      pickupLocation: job.pickupLocation,
+      dropLocation: job.dropLocation,
+      payment: {
+        totalAmount: `₹${job.totalAmount}`,
+        advancePaid: `₹${job.advancePaid ?? 0}`,
+        dueAmount: `₹${job.totalAmount - (job.advancePaid ?? 0)}`,
+        paymentMethod: 'UPI',
+        status: 'Pending',
+      },
+      notes: [],
+      primaryActionLabel: 'Dispatch Vehicle',
+    };
+    return [offlineJob, ...FALLBACK_JOBS];
+  },
 };

@@ -75,20 +75,24 @@ export const CustomersView: React.FC = () => {
       .catch(console.error);
   };
 
-  // Edit note — local only for now (DB note edit deferred to Phase 4)
+  // Edit note — persists to Supabase then updates local state
   const handleEditNote = (noteId: string, newText: string) => {
     if (!selectedCustomer) return;
     const customerId = selectedCustomer.id;
-    setCustomers((prev) =>
-      prev.map((c) =>
-        c.id === customerId
-          ? { ...c, history: c.history.map((h) => (h.id === noteId ? { ...h, details: newText } : h)) }
-          : c
-      )
-    );
-    setSelectedCustomer((prev) =>
-      prev ? { ...prev, history: prev.history.map((h) => (h.id === noteId ? { ...h, details: newText } : h)) } : null
-    );
+    ApiService.updateNote(noteId, newText, actor)
+      .then(() => {
+        setCustomers((prev) =>
+          prev.map((c) =>
+            c.id === customerId
+              ? { ...c, history: c.history.map((h) => (h.id === noteId ? { ...h, details: newText } : h)) }
+              : c
+          )
+        );
+        setSelectedCustomer((prev) =>
+          prev ? { ...prev, history: prev.history.map((h) => (h.id === noteId ? { ...h, details: newText } : h)) } : null
+        );
+      })
+      .catch(console.error);
   };
 
   // Follow-up update — persists to Supabase

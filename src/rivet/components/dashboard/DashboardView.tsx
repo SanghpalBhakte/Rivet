@@ -1,9 +1,5 @@
-import React, { useState } from 'react';
-import {
-  INITIAL_QUEUE_ITEMS,
-  INITIAL_SUMMARY_METRICS,
-  INITIAL_RECENT_ACTIVITIES,
-} from '../../data/mockData';
+import React, { useState, useEffect } from 'react';
+import { INITIAL_QUEUE_ITEMS } from '../../data/mockData';
 import { QueueItem, SimulationMode } from '../../types/rivet';
 import { PageHeader } from '../ui/PageHeader';
 import { TodayQueue } from './TodayQueue';
@@ -12,18 +8,44 @@ import { SummaryColumn } from './SummaryColumn';
 import { RecentActivity } from './RecentActivity';
 import { Button } from '../ui/Button';
 import { Card } from '../ui/Card';
+import { ApiService, ActivityLogEntry, DEV_WORKSPACE_ID } from '../../services/api';
+import { useAuth } from '../../context/AuthContext';
 
 export const DashboardView: React.FC = () => {
+  const { user } = useAuth();
+  const workspaceId = user?.workspaceId || DEV_WORKSPACE_ID;
+
   const [queueItems, setQueueItems] = useState<QueueItem[]>(INITIAL_QUEUE_ITEMS);
   const [simMode, setSimMode] = useState<SimulationMode>('normal');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  // Complete an operational task in the queue
+  // Live DB state
+  const [metrics, setMetrics] = useState<Array<{
+    id: string; label: string; value: string | number; subtext: string; urgent: boolean;
+  }>>([]);
+  const [pipelineStages, setPipelineStages] = useState<Array<{ stage: string; count: number }>>([]);
+  const [recentActivity, setRecentActivity] = useState<ActivityLogEntry[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    setLoading(true);
+    Promise.all([
+      ApiService.getDashboardMetrics(workspaceId),
+      ApiService.getActivityLog(workspaceId, undefined, 12),
+    ])
+      .then(([dashboard, activity]) => {
+        setMetrics(dashboard.metrics);
+        setPipelineStages(dashboard.pipelineStages);
+        setRecentActivity(activity);
+      })
+      .catch(console.error)
+      .finally(() => setLoading(false));
+  }, [workspaceId]);
+
   const handleActionComplete = (id: string) => {
     setQueueItems((prev) => prev.filter((item) => item.id !== id));
   };
 
-  // Reset state back to initial mock data
   const handleResetData = () => {
     setQueueItems(INITIAL_QUEUE_ITEMS);
     setSimMode('normal');
@@ -41,7 +63,6 @@ export const DashboardView: React.FC = () => {
 
   return (
     <div>
-      {/* Clean Operations Control Room Page Header */}
       <PageHeader
         title="Operations Control Room"
         subline="Janai Ops • Live dispatch, follow-up queues & performance signals"
@@ -49,7 +70,6 @@ export const DashboardView: React.FC = () => {
         onSimModeChange={handleSimModeChange}
       />
 
-      {/* Error state banner if triggered */}
       {(simMode === 'error' || errorMessage) && (
         <div className="rv-error-banner" role="alert" style={{ marginBottom: '20px' }}>
           <div>
@@ -61,44 +81,47 @@ export const DashboardView: React.FC = () => {
         </div>
       )}
 
-      {/* Balanced 4-Metric Summary Bar */}
+      {/* Live KPI Metrics Bar */}
       <div className="rv-metrics-grid" style={{ marginBottom: '20px' }}>
-        {INITIAL_SUMMARY_METRICS.map((m) => (
-          <div key={m.id} className={`rv-metric-card ${m.urgent ? 'rv-metric-card--urgent' : ''}`}>
-            <div className="rv-metric-card__value rv-num">
-              {simMode === 'empty' ? 0 : m.value}
-            </div>
-            <div className="rv-metric-card__label">{m.label}</div>
-            <div className="rv-metric-card__subtext">{m.subtext}</div>
-          </div>
-        ))}
+        {loading
+          ? [1, 2, 3, 4].map((i) => (
+              <div key={i} className="rv-metric-card">
+                <div className="rv-skeleton" style={{ width: '40px', height: '28px', marginBottom: '6px' }} />
+                <div className="rv-skeleton" style={{ width: '80%', height: '11px', marginBottom: '4px' }} />
+                <div className="rv-skeleton" style={{ width: '60%', height: '10px' }} />
+              </div>
+            ))
+          : metrics.map((m) => (
+              <div key={m.id} className={`rv-metric-card ${m.urgent ? 'rv-metric-card--urgent' : ''}`}>
+                <div className="rv-metric-card__value rv-num">
+                  {simMode === 'empty' ? 0 : m.value}
+                </div>
+                <div className="rv-metric-card__label">{m.label}</div>
+                <div className="rv-metric-card__subtext">{m.subtext}</div>
+              </div>
+            ))}
       </div>
 
-      {/* Two-Column Balanced Operations Grid */}
+      {/* Two-Column Operations Grid */}
       <div className="rv-dashboard-grid">
-        {/* Left Primary Column: Priority Queue & Ops Reminders */}
         <section aria-label="Today's Operational Actions" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
           <TodayQueue
             items={queueItems}
             onActionComplete={handleActionComplete}
             simMode={simMode}
           />
-
-          <TodayReminders
-            simMode={simMode}
-          />
+          <TodayReminders simMode={simMode} />
         </section>
 
-        {/* Right Secondary Column: Pipeline Summary, Activity & Quick Controls */}
         <aside aria-label="Pipeline & Activity Intelligence" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
           <SummaryColumn
-            metrics={INITIAL_SUMMARY_METRICS}
-            simMode={simMode}
+            stages={pipelineStages}
+            simMode={loading ? 'loading' : simMode}
           />
 
           <RecentActivity
-            activities={INITIAL_RECENT_ACTIVITIES}
-            simMode={simMode}
+            activities={recentActivity}
+            simMode={loading ? 'loading' : simMode}
           />
 
           {/* Ops Quick Links */}
@@ -123,4 +146,3 @@ export const DashboardView: React.FC = () => {
     </div>
   );
 };
-

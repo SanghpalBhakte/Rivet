@@ -1,20 +1,26 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { INITIAL_JOBS } from '../../data/mockData';
 import { Job, JobStatus, SimulationMode } from '../../types/rivet';
 import { PageHeader } from '../ui/PageHeader';
 import { Card } from '../ui/Card';
+import { Button } from '../ui/Button';
 import { EmptyState } from '../ui/EmptyState';
 import { SkeletonRow } from '../ui/Skeleton';
 import { JobRow } from './JobRow';
 import { JobDetailDrawer } from './JobDetailDrawer';
+import { NewJobModal } from './NewJobModal';
 import { ApiService } from '../../services/api';
+import { useAuth } from '../../context/AuthContext';
 
 export const JobsView: React.FC = () => {
-  const [jobs, setJobs] = useState<Job[]>(INITIAL_JOBS);
+  const { user } = useAuth();
+  const actor = { id: user?.id, name: user?.fullName, workspaceId: user?.workspaceId };
+
+  const [jobs, setJobs] = useState<Job[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<'All' | JobStatus>('All');
   const [selectedJob, setSelectedJob] = useState<Job | null>(null);
   const [simMode, setSimMode] = useState<SimulationMode>('normal');
+  const [isNewJobModalOpen, setIsNewJobModalOpen] = useState(false);
 
   useEffect(() => {
     ApiService.getJobs().then(setJobs);
@@ -47,47 +53,35 @@ export const JobsView: React.FC = () => {
     handleUpdateStatus(job.id, nextStatus);
   };
 
-  // Status update handler
+  // Status update handler — persists to Supabase + logs activity
   const handleUpdateStatus = (jobId: string, newStatus: JobStatus) => {
-    const statusNoteText = `Job status updated to ${newStatus}`;
-    const newNote = {
-      id: `jn-${Date.now()}`,
-      author: 'Janai Ops',
-      timestamp: 'Just now',
-      text: statusNoteText,
-    };
-    setJobs((prev) =>
-      prev.map((j) =>
-        j.id === jobId
-          ? { ...j, status: newStatus, notes: [newNote, ...j.notes] }
-          : j
-      )
-    );
-    if (selectedJob && selectedJob.id === jobId) {
-      setSelectedJob((prev) =>
-        prev
-          ? { ...prev, status: newStatus, notes: [newNote, ...prev.notes] }
-          : null
-      );
-    }
+    ApiService.updateJobStatus(jobId, newStatus, actor)
+      .then((updatedJobs) => {
+        setJobs(updatedJobs);
+        if (selectedJob && selectedJob.id === jobId) {
+          const reFetched = updatedJobs.find((j) => j.id === jobId) || null;
+          setSelectedJob(reFetched);
+        }
+      })
+      .catch(console.error);
   };
 
-  // Add note handler
+  // Add note handler — persists to Supabase
   const handleAddNote = (jobId: string, noteText: string) => {
-    const newNote = {
-      id: `jn-${Date.now()}`,
-      author: 'Janai Ops',
-      timestamp: 'Just now',
-      text: noteText,
-    };
-    setJobs((prev) =>
-      prev.map((j) => (j.id === jobId ? { ...j, notes: [newNote, ...j.notes] } : j))
-    );
-    if (selectedJob && selectedJob.id === jobId) {
-      setSelectedJob((prev) =>
-        prev ? { ...prev, notes: [newNote, ...prev.notes] } : null
-      );
-    }
+    ApiService.addNote(jobId, 'Job', noteText, actor.id, actor.name, actor.workspaceId)
+      .then((newNote) => {
+        setJobs((prev) =>
+          prev.map((j) =>
+            j.id === jobId ? { ...j, notes: [newNote, ...j.notes] } : j
+          )
+        );
+        if (selectedJob && selectedJob.id === jobId) {
+          setSelectedJob((prev) =>
+            prev ? { ...prev, notes: [newNote, ...prev.notes] } : null
+          );
+        }
+      })
+      .catch(console.error);
   };
 
   // Status counts for tab badges
@@ -193,44 +187,50 @@ export const JobsView: React.FC = () => {
 
       {/* Main Jobs Control Card */}
       <Card dense className="rv-card--hero">
-        {/* Search & Filter Bar */}
-        <div className="rv-leads-bar">
-          {/* Search Input */}
-          <div className="rv-search-wrapper">
-            <span className="rv-search-icon">🔍</span>
-            <input
-              type="text"
-              className="rv-search-input"
-              placeholder="Search work order #, customer, driver, vehicle, or route..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
-            {searchQuery && (
-              <button
-                className="rv-search-clear"
-                onClick={() => setSearchQuery('')}
-                title="Clear search"
-              >
-                ✕
-              </button>
-            )}
+        {/* Search & Filter Bar with New Job Button */}
+        <div className="rv-leads-bar" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flex: 1 }}>
+            {/* Search Input */}
+            <div className="rv-search-wrapper" style={{ flex: 1 }}>
+              <span className="rv-search-icon">🔍</span>
+              <input
+                type="text"
+                className="rv-search-input"
+                placeholder="Search work order #, customer, driver, vehicle, or route..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+              {searchQuery && (
+                <button
+                  className="rv-search-clear"
+                  onClick={() => setSearchQuery('')}
+                  title="Clear search"
+                >
+                  ✕
+                </button>
+              )}
+            </div>
+
+            {/* Status Filter Tabs */}
+            <div className="rv-queue-tabs" role="tablist" aria-label="Filter jobs by status">
+              {STATUS_FILTERS.map((st) => (
+                <button
+                  key={st}
+                  className={`rv-queue-tab ${statusFilter === st ? 'rv-queue-tab--active' : ''}`}
+                  onClick={() => setStatusFilter(st)}
+                  role="tab"
+                  aria-selected={statusFilter === st}
+                >
+                  <span>{st}</span>
+                  <span className="rv-queue-tab__count rv-num">{getStatusCount(st)}</span>
+                </button>
+              ))}
+            </div>
           </div>
 
-          {/* Status Filter Tabs */}
-          <div className="rv-queue-tabs" role="tablist" aria-label="Filter jobs by status">
-            {STATUS_FILTERS.map((st) => (
-              <button
-                key={st}
-                className={`rv-queue-tab ${statusFilter === st ? 'rv-queue-tab--active' : ''}`}
-                onClick={() => setStatusFilter(st)}
-                role="tab"
-                aria-selected={statusFilter === st}
-              >
-                <span>{st}</span>
-                <span className="rv-queue-tab__count rv-num">{getStatusCount(st)}</span>
-              </button>
-            ))}
-          </div>
+          <Button variant="primary" size="sm" onClick={() => setIsNewJobModalOpen(true)}>
+            + New Work Order
+          </Button>
         </div>
 
         {/* Jobs List / Table */}
@@ -244,7 +244,7 @@ export const JobsView: React.FC = () => {
           <EmptyState
             icon="🚚"
             title="No work orders match your filter"
-            description="Try clearing your search query or selecting a different status tab."
+            description="Try clearing your search query, selecting a different status tab, or create a new work order."
           />
         ) : (
           <ul className="rv-queue-list" role="list" style={{ background: 'transparent' }}>
@@ -266,6 +266,13 @@ export const JobsView: React.FC = () => {
         onClose={() => setSelectedJob(null)}
         onUpdateStatus={handleUpdateStatus}
         onAddNote={handleAddNote}
+      />
+
+      {/* New Job Modal */}
+      <NewJobModal
+        isOpen={isNewJobModalOpen}
+        onClose={() => setIsNewJobModalOpen(false)}
+        onJobCreated={(updatedJobs) => setJobs(updatedJobs)}
       />
     </div>
   );

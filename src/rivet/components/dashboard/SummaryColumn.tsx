@@ -1,17 +1,15 @@
 import React from 'react';
-import { SummaryMetric, PipelineStage, SimulationMode } from '../../types/rivet';
-import { INITIAL_PIPELINE_STAGES } from '../../data/mockData';
+import { SimulationMode } from '../../types/rivet';
 import { Card } from '../ui/Card';
 import { SkeletonMetric } from '../ui/Skeleton';
 
 interface SummaryColumnProps {
-  metrics?: SummaryMetric[];
-  stages?: PipelineStage[];
+  stages: Array<{ stage: string; count: number }>;
   simMode: SimulationMode;
 }
 
 export const SummaryColumn: React.FC<SummaryColumnProps> = ({
-  stages = INITIAL_PIPELINE_STAGES,
+  stages,
   simMode,
 }) => {
   const totalCount = simMode === 'empty' ? 0 : stages.reduce((acc, curr) => acc + curr.count, 0);
