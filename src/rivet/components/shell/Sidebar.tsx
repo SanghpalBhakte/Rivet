@@ -64,6 +64,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
         >
           <span>Customers</span>
         </button>
+
+        <button
+          className={`rv-sidebar__link ${activeTab === 'tasks' ? 'rv-sidebar__link--active' : ''}`}
+          onClick={() => onSelectTab && onSelectTab('tasks')}
+          aria-current={activeTab === 'tasks' ? 'page' : undefined}
+        >
+          <span>Tasks & Reminders</span>
+        </button>
       </nav>
 
       {/* Footer System Status */}

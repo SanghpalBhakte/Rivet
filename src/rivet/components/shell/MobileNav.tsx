@@ -85,6 +85,12 @@ export const MobileNav: React.FC<MobileNavProps> = ({
             >
               <span>Customers</span>
             </button>
+            <button
+              className={`rv-sidebar__link ${activeTab === 'tasks' ? 'rv-sidebar__link--active' : ''}`}
+              onClick={() => handleSelect('tasks')}
+            >
+              <span>Tasks & Reminders</span>
+            </button>
           </div>
         </div>
       )}

@@ -7,6 +7,7 @@ import { LeadsView } from './components/leads/LeadsView';
 import { JobsView } from './components/jobs/JobsView';
 import { PaymentsView } from './components/payments/PaymentsView';
 import { CustomersView } from './components/customers/CustomersView';
+import { TasksView } from './components/tasks/TasksView';
 
 interface RivetAppProps {
   onBackToPortfolio?: () => void;
@@ -57,6 +58,7 @@ export const RivetApp: React.FC<RivetAppProps> = ({ onBackToPortfolio }) => {
         {activeTab === 'jobs' && <JobsView />}
         {activeTab === 'payments' && <PaymentsView />}
         {activeTab === 'customers' && <CustomersView />}
+        {activeTab === 'tasks' && <TasksView />}
       </AppShell>
     </div>
   );
