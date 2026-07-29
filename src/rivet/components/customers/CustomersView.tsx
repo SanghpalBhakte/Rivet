@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { INITIAL_CUSTOMERS, INITIAL_LEADS, INITIAL_JOBS, INITIAL_PAYMENTS, INITIAL_TASKS } from '../../data/mockData';
-import { CustomerRecord, CustomerHealthStatus, SimulationMode } from '../../types/rivet';
+import { CustomerRecord, CustomerHealthStatus, SimulationMode, Lead, Job, PaymentRecord, TaskRecord, LeadStage, JobStatus, PaymentStatus } from '../../types/rivet';
 import { PageHeader } from '../ui/PageHeader';
 import { Card } from '../ui/Card';
 import { EmptyState } from '../ui/EmptyState';
@@ -10,6 +10,11 @@ import { CustomerAccountView } from './CustomerAccountView';
 
 export const CustomersView: React.FC = () => {
   const [customers, setCustomers] = useState<CustomerRecord[]>(INITIAL_CUSTOMERS);
+  const [leads, setLeads] = useState<Lead[]>(INITIAL_LEADS);
+  const [jobs, setJobs] = useState<Job[]>(INITIAL_JOBS);
+  const [payments, setPayments] = useState<PaymentRecord[]>(INITIAL_PAYMENTS);
+  const [tasks, setTasks] = useState<TaskRecord[]>(INITIAL_TASKS);
+
   const [searchQuery, setSearchQuery] = useState('');
   const [healthFilter, setHealthFilter] = useState<'All' | CustomerHealthStatus>('All');
   const [selectedCustomer, setSelectedCustomer] = useState<CustomerRecord | null>(null);
@@ -58,6 +63,52 @@ export const CustomersView: React.FC = () => {
     }
   };
 
+  // Follow-up date update handler
+  const handleUpdateFollowUp = (customerId: string, nextTime: string) => {
+    setCustomers((prev) =>
+      prev.map((c) => (c.id === customerId ? { ...c, nextFollowUp: nextTime } : c))
+    );
+    if (selectedCustomer && selectedCustomer.id === customerId) {
+      setSelectedCustomer((prev) => (prev ? { ...prev, nextFollowUp: nextTime } : null));
+    }
+  };
+
+  // Lead stage update handler
+  const handleUpdateLeadStage = (leadId: string, newStage: LeadStage) => {
+    setLeads((prev) =>
+      prev.map((l) => (l.id === leadId ? { ...l, stage: newStage } : l))
+    );
+  };
+
+  // Job status update handler
+  const handleUpdateJobStatus = (jobId: string, newStatus: JobStatus) => {
+    setJobs((prev) =>
+      prev.map((j) => (j.id === jobId ? { ...j, status: newStatus } : j))
+    );
+  };
+
+  // Payment record update handler
+  const handleUpdatePaymentRecord = (paymentId: string, amountPaid: number, method: string) => {
+    setPayments((prev) =>
+      prev.map((p) => {
+        if (p.id !== paymentId) return p;
+        const newPaid = p.amountPaid + amountPaid;
+        const newBalance = Math.max(0, p.totalAmount - newPaid);
+        let newStatus: PaymentStatus = p.status;
+        if (newBalance === 0) newStatus = 'Paid';
+        else if (newPaid > 0) newStatus = 'Partial';
+
+        return {
+          ...p,
+          amountPaid: newPaid,
+          balanceDue: newBalance,
+          paymentMethod: method,
+          status: newStatus,
+        };
+      })
+    );
+  };
+
   // Health counts for tab badges
   const getHealthCount = (st: 'All' | CustomerHealthStatus) => {
     if (st === 'All') return customers.length;
@@ -72,22 +123,27 @@ export const CustomersView: React.FC = () => {
     'Repeat Client',
   ];
 
-  // If a customer is selected, display Customer / Account View V1 workspace
+  // If a customer is selected, display Customer / Account View V2 workspace
   if (selectedCustomer) {
     return (
       <div>
         <CustomerAccountView
           customer={selectedCustomer}
-          allLeads={INITIAL_LEADS}
-          allJobs={INITIAL_JOBS}
-          allPayments={INITIAL_PAYMENTS}
-          allTasks={INITIAL_TASKS}
+          allLeads={leads}
+          allJobs={jobs}
+          allPayments={payments}
+          allTasks={tasks}
           onBack={() => setSelectedCustomer(null)}
           onAddNote={handleAddNote}
+          onUpdateFollowUp={handleUpdateFollowUp}
+          onUpdateLeadStage={handleUpdateLeadStage}
+          onUpdateJobStatus={handleUpdateJobStatus}
+          onUpdatePaymentRecord={handleUpdatePaymentRecord}
         />
       </div>
     );
   }
+
 
   return (
     <div>

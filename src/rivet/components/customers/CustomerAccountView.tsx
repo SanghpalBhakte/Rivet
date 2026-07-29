@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
-import { CustomerRecord, Lead, Job, PaymentRecord, TaskRecord, TaskType, TaskPriority } from '../../types/rivet';
+import { CustomerRecord, Lead, Job, PaymentRecord, TaskRecord, TaskType, TaskPriority, LeadStage, JobStatus, PaymentStatus } from '../../types/rivet';
 import { getCustomerOperationalAccount } from '../../utils/customerMapper';
-import { INITIAL_TASKS } from '../../data/mockData';
 import { Badge } from '../ui/Badge';
 import { Button } from '../ui/Button';
 import { Card } from '../ui/Card';
@@ -13,9 +12,13 @@ interface CustomerAccountViewProps {
   allLeads: Lead[];
   allJobs: Job[];
   allPayments: PaymentRecord[];
-  allTasks?: TaskRecord[];
+  allTasks: TaskRecord[];
   onBack: () => void;
   onAddNote: (customerId: string, noteText: string) => void;
+  onUpdateFollowUp: (customerId: string, nextTime: string) => void;
+  onUpdateLeadStage: (leadId: string, newStage: LeadStage) => void;
+  onUpdateJobStatus: (jobId: string, newStatus: JobStatus) => void;
+  onUpdatePaymentRecord: (paymentId: string, amountPaid: number, method: string) => void;
 }
 
 export const CustomerAccountView: React.FC<CustomerAccountViewProps> = ({
@@ -23,19 +26,33 @@ export const CustomerAccountView: React.FC<CustomerAccountViewProps> = ({
   allLeads,
   allJobs,
   allPayments,
-  allTasks = INITIAL_TASKS,
+  allTasks,
   onBack,
   onAddNote,
+  onUpdateFollowUp,
+  onUpdateLeadStage,
+  onUpdateJobStatus,
+  onUpdatePaymentRecord,
 }) => {
   const [tasksList, setTasksList] = useState<TaskRecord[]>(allTasks);
   const [noteInput, setNoteInput] = useState('');
   const [showAddReminderForm, setShowAddReminderForm] = useState(false);
+  const [showScheduleFollowUpInput, setShowScheduleFollowUpInput] = useState(false);
 
   // New Reminder Form State
   const [reminderTitle, setReminderTitle] = useState('');
   const [reminderType, setReminderType] = useState<TaskType>('Callback');
   const [reminderDue, setReminderDue] = useState('Tomorrow, 10:00 AM');
   const [reminderPriority, setReminderPriority] = useState<TaskPriority>('Normal');
+
+  // Follow-up Schedule State
+  const [customFollowUpTime, setCustomFollowUpTime] = useState(customer.nextFollowUp || 'Today, 4:00 PM');
+
+  // Inline Payment Recoder State
+  const [activePaymentId, setActivePaymentId] = useState<string | null>(null);
+  const [paymentAmountInput, setPaymentAmountInput] = useState('');
+  const [paymentMethodInput, setPaymentMethodInput] = useState('UPI (PhonePe)');
+
   const [actionSuccessMsg, setActionSuccessMsg] = useState<string | null>(null);
 
   // Retrieve dynamically aggregated operational account data
@@ -48,6 +65,14 @@ export const CustomerAccountView: React.FC<CustomerAccountViewProps> = ({
     onAddNote(customer.id, noteInput.trim());
     setNoteInput('');
     showToast('Internal note logged to customer account');
+  };
+
+  const handleScheduleFollowUpSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!customFollowUpTime.trim()) return;
+    onUpdateFollowUp(customer.id, customFollowUpTime.trim());
+    setShowScheduleFollowUpInput(false);
+    showToast(`Updated follow-up to: ${customFollowUpTime.trim()}`);
   };
 
   const handleCreateReminderSubmit = (e: React.FormEvent) => {
@@ -79,6 +104,17 @@ export const CustomerAccountView: React.FC<CustomerAccountViewProps> = ({
       prev.map((t) => (t.id === task.id ? { ...t, status: newStatus } : t))
     );
     showToast(`Marked reminder as ${newStatus}`);
+  };
+
+  const handleRecordPaymentSubmit = (e: React.FormEvent, paymentId: string) => {
+    e.preventDefault();
+    const amt = parseFloat(paymentAmountInput);
+    if (isNaN(amt) || amt <= 0) return;
+
+    onUpdatePaymentRecord(paymentId, amt, paymentMethodInput);
+    setActivePaymentId(null);
+    setPaymentAmountInput('');
+    showToast(`Recorded payment of ₹${amt.toLocaleString()} via ${paymentMethodInput}`);
   };
 
   const showToast = (msg: string) => {
@@ -196,11 +232,8 @@ export const CustomerAccountView: React.FC<CustomerAccountViewProps> = ({
             <Button variant="secondary" size="sm" onClick={() => setShowAddReminderForm(true)}>
               ⏰ + Reminder
             </Button>
-            <Button variant="secondary" size="sm" onClick={() => showToast('Dispatched new job order form for customer')}>
-              🚚 + Job
-            </Button>
-            <Button variant="primary" size="sm" onClick={() => showToast('Opened payment recorder for customer')}>
-              💳 + Record Payment
+            <Button variant="secondary" size="sm" onClick={() => setShowScheduleFollowUpInput(!showScheduleFollowUpInput)}>
+              📅 Schedule Follow-up
             </Button>
           </div>
         </div>
@@ -361,7 +394,7 @@ export const CustomerAccountView: React.FC<CustomerAccountViewProps> = ({
             )}
           </Card>
 
-          {/* C. Lead / Inquiry History */}
+          {/* C. Lead / Inquiry History with Quick Stage Update */}
           <Card dense>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
               <span style={{ fontSize: '12px', fontWeight: 700, color: 'var(--rv-text-primary)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
@@ -373,7 +406,7 @@ export const CustomerAccountView: React.FC<CustomerAccountViewProps> = ({
               <EmptyState
                 icon="📋"
                 title="No inquiries recorded yet"
-                description="Use the + New Inquiry action on the Leads page to capture inquiries for this client."
+                description="Inquiries logged for this customer will appear here automatically."
               />
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
@@ -393,7 +426,7 @@ export const CustomerAccountView: React.FC<CustomerAccountViewProps> = ({
                     }}
                   >
                     <div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '2px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
                         <Badge variant={getStageBadgeVariant(lead.stage)}>{lead.stage.toUpperCase()}</Badge>
                         <span className="rv-tabular" style={{ fontSize: '11px', color: 'var(--rv-text-muted)' }}>
                           {lead.id.toUpperCase()} • Created {lead.createdAt}
@@ -407,13 +440,28 @@ export const CustomerAccountView: React.FC<CustomerAccountViewProps> = ({
                       </div>
                     </div>
 
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
                       <span className="rv-num" style={{ fontSize: '12px', fontWeight: 600, color: 'var(--rv-text-secondary)' }}>
                         {lead.quoteAmount || lead.budget}
                       </span>
-                      <Button variant="secondary" size="sm" onClick={() => showToast(`Opened Lead ${lead.id.toUpperCase()}`)}>
-                        Open Lead
-                      </Button>
+
+                      {/* Quick Stage Update Selector */}
+                      <select
+                        className="rv-lead-note-input"
+                        value={lead.stage}
+                        onChange={(e) => {
+                          onUpdateLeadStage(lead.id, e.target.value as LeadStage);
+                          showToast(`Updated Lead ${lead.id.toUpperCase()} to ${e.target.value}`);
+                        }}
+                        style={{ fontSize: '11px', padding: '3px 6px' }}
+                      >
+                        <option value="New">New</option>
+                        <option value="Contacted">Contacted</option>
+                        <option value="Quote Sent">Quote Sent</option>
+                        <option value="Confirmed">Confirmed</option>
+                        <option value="Closed">Closed</option>
+                        <option value="Lost">Lost</option>
+                      </select>
                     </div>
                   </div>
                 ))}
@@ -421,7 +469,7 @@ export const CustomerAccountView: React.FC<CustomerAccountViewProps> = ({
             )}
           </Card>
 
-          {/* D. Jobs History */}
+          {/* D. Jobs History with Quick Status Update */}
           <Card dense>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
               <span style={{ fontSize: '12px', fontWeight: 700, color: 'var(--rv-text-primary)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
@@ -453,7 +501,7 @@ export const CustomerAccountView: React.FC<CustomerAccountViewProps> = ({
                     }}
                   >
                     <div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '2px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
                         <Badge variant={getJobStatusBadgeVariant(job.status)}>{job.status.toUpperCase()}</Badge>
                         <span className="rv-tabular" style={{ fontSize: '11px', color: 'var(--rv-text-muted)', fontWeight: 600 }}>
                           {job.jobCode}
@@ -470,7 +518,7 @@ export const CustomerAccountView: React.FC<CustomerAccountViewProps> = ({
                       </div>
                     </div>
 
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
                       <div style={{ textAlign: 'right' }}>
                         <div className="rv-num" style={{ fontSize: '12px', fontWeight: 600, color: 'var(--rv-text-primary)' }}>
                           {job.payment.totalAmount}
@@ -479,9 +527,22 @@ export const CustomerAccountView: React.FC<CustomerAccountViewProps> = ({
                           Due: {job.payment.dueAmount}
                         </div>
                       </div>
-                      <Button variant="secondary" size="sm" onClick={() => showToast(`Opened Work Order ${job.jobCode}`)}>
-                        Open Job
-                      </Button>
+
+                      {/* Quick Job Status Selector */}
+                      <select
+                        className="rv-lead-note-input"
+                        value={job.status}
+                        onChange={(e) => {
+                          onUpdateJobStatus(job.id, e.target.value as JobStatus);
+                          showToast(`Updated Work Order ${job.jobCode} to ${e.target.value}`);
+                        }}
+                        style={{ fontSize: '11px', padding: '3px 6px' }}
+                      >
+                        <option value="Scheduled">Scheduled</option>
+                        <option value="In Progress">In Progress</option>
+                        <option value="Completed">Completed</option>
+                        <option value="Cancelled">Cancelled</option>
+                      </select>
                     </div>
                   </div>
                 ))}
@@ -489,7 +550,7 @@ export const CustomerAccountView: React.FC<CustomerAccountViewProps> = ({
             )}
           </Card>
 
-          {/* E. Payments History */}
+          {/* E. Payments History with Inline Payment Recorder */}
           <Card dense>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
               <span style={{ fontSize: '12px', fontWeight: 700, color: 'var(--rv-text-primary)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
@@ -514,50 +575,103 @@ export const CustomerAccountView: React.FC<CustomerAccountViewProps> = ({
                       padding: '10px 12px',
                       borderRadius: '6px',
                       display: 'flex',
-                      justifyContent: 'space-between',
-                      alignItems: 'center',
-                      flexWrap: 'wrap',
+                      flexDirection: 'column',
                       gap: '8px',
                     }}
                   >
-                    <div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '2px' }}>
-                        <Badge variant={getPaymentStatusBadgeVariant(pay.status)}>{pay.status.toUpperCase()}</Badge>
-                        <span className="rv-tabular" style={{ fontSize: '11px', color: 'var(--rv-text-muted)', fontWeight: 600 }}>
-                          {pay.paymentCode}
-                        </span>
-                        <span className="rv-tabular" style={{ fontSize: '11px', color: 'var(--rv-text-muted)' }}>
-                          • Ref: {pay.jobCode}
-                        </span>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
+                      <div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+                          <Badge variant={getPaymentStatusBadgeVariant(pay.status)}>{pay.status.toUpperCase()}</Badge>
+                          <span className="rv-tabular" style={{ fontSize: '11px', color: 'var(--rv-text-muted)', fontWeight: 600 }}>
+                            {pay.paymentCode}
+                          </span>
+                          <span className="rv-tabular" style={{ fontSize: '11px', color: 'var(--rv-text-muted)' }}>
+                            • Ref: {pay.jobCode}
+                          </span>
+                        </div>
+                        <h4 style={{ margin: 0, fontSize: '13px', fontWeight: 600, color: 'var(--rv-text-primary)' }}>
+                          {pay.serviceTitle}
+                        </h4>
+                        <div style={{ fontSize: '11px', color: 'var(--rv-text-muted)', marginTop: '2px' }}>
+                          Method: <strong>{pay.paymentMethod}</strong> • Due Date: <span className="rv-num">{pay.dueDate}</span>
+                        </div>
                       </div>
-                      <h4 style={{ margin: 0, fontSize: '13px', fontWeight: 600, color: 'var(--rv-text-primary)' }}>
-                        {pay.serviceTitle}
-                      </h4>
-                      <div style={{ fontSize: '11px', color: 'var(--rv-text-muted)', marginTop: '2px' }}>
-                        Method: <strong>{pay.paymentMethod}</strong> • Due Date: <span className="rv-num">{pay.dueDate}</span>
+
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                        <div style={{ textAlign: 'right' }}>
+                          <div className="rv-num" style={{ fontSize: '12px', fontWeight: 600, color: 'var(--rv-status-completed-text)' }}>
+                            Paid: ₹{pay.amountPaid.toLocaleString()}
+                          </div>
+                          <div
+                            className="rv-num"
+                            style={{
+                              fontSize: '11px',
+                              fontWeight: 600,
+                              color: pay.balanceDue > 0 ? 'var(--rv-status-overdue-text)' : 'var(--rv-text-muted)',
+                            }}
+                          >
+                            Balance: ₹{pay.balanceDue.toLocaleString()}
+                          </div>
+                        </div>
+
+                        {pay.balanceDue > 0 ? (
+                          <Button
+                            variant="primary"
+                            size="sm"
+                            onClick={() => {
+                              setActivePaymentId(activePaymentId === pay.id ? null : pay.id);
+                              setPaymentAmountInput(pay.balanceDue.toString());
+                            }}
+                          >
+                            {activePaymentId === pay.id ? 'Cancel' : '+ Record Payment'}
+                          </Button>
+                        ) : (
+                          <Badge variant="completed">SETTLED</Badge>
+                        )}
                       </div>
                     </div>
 
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                      <div style={{ textAlign: 'right' }}>
-                        <div className="rv-num" style={{ fontSize: '12px', fontWeight: 600, color: 'var(--rv-status-completed-text)' }}>
-                          Paid: ₹{pay.amountPaid.toLocaleString()}
-                        </div>
-                        <div
-                          className="rv-num"
-                          style={{
-                            fontSize: '11px',
-                            fontWeight: 600,
-                            color: pay.balanceDue > 0 ? 'var(--rv-status-overdue-text)' : 'var(--rv-text-muted)',
-                          }}
+                    {/* Inline Record Payment Form */}
+                    {activePaymentId === pay.id && (
+                      <form
+                        onSubmit={(e) => handleRecordPaymentSubmit(e, pay.id)}
+                        style={{
+                          background: 'var(--rv-bg-surface-elevated)',
+                          border: '1px solid var(--rv-border-strong)',
+                          padding: '10px',
+                          borderRadius: '4px',
+                          display: 'flex',
+                          gap: '8px',
+                          alignItems: 'center',
+                          marginTop: '4px',
+                        }}
+                      >
+                        <span style={{ fontSize: '11px', fontWeight: 600, color: 'var(--rv-text-primary)' }}>Record Paid Amount:</span>
+                        <input
+                          type="number"
+                          className="rv-lead-note-input"
+                          placeholder="Amount in ₹"
+                          value={paymentAmountInput}
+                          onChange={(e) => setPaymentAmountInput(e.target.value)}
+                          style={{ width: '120px' }}
+                          required
+                        />
+                        <select
+                          className="rv-lead-note-input"
+                          value={paymentMethodInput}
+                          onChange={(e) => setPaymentMethodInput(e.target.value)}
+                          style={{ width: '140px' }}
                         >
-                          Balance: ₹{pay.balanceDue.toLocaleString()}
-                        </div>
-                      </div>
-                      <Button variant="secondary" size="sm" onClick={() => showToast(`Opened Invoice ${pay.paymentCode}`)}>
-                        View Record
-                      </Button>
-                    </div>
+                          <option value="UPI (PhonePe)">UPI (PhonePe)</option>
+                          <option value="Bank Transfer">Bank Transfer</option>
+                          <option value="Cash">Cash</option>
+                        </select>
+                        <Button type="submit" variant="primary" size="sm">
+                          Save Payment
+                        </Button>
+                      </form>
+                    )}
                   </div>
                 ))}
               </div>
@@ -567,7 +681,7 @@ export const CustomerAccountView: React.FC<CustomerAccountViewProps> = ({
           {/* F. Notes & Activity Log */}
           <Card dense>
             <span style={{ fontSize: '12px', fontWeight: 700, color: 'var(--rv-text-primary)', textTransform: 'uppercase', letterSpacing: '0.04em', display: 'block', marginBottom: '10px' }}>
-              📋 Running Activity Timeline & Ops Notes
+              📋 Running Activity Timeline & Internal Notes Logger
             </span>
 
             {/* Note Logging Input Form */}
@@ -575,10 +689,11 @@ export const CustomerAccountView: React.FC<CustomerAccountViewProps> = ({
               <input
                 type="text"
                 className="rv-lead-note-input"
-                placeholder="Log internal note or call summary for ops..."
+                placeholder="Log internal note, call summary, or ops updates for this customer..."
                 value={noteInput}
                 onChange={(e) => setNoteInput(e.target.value)}
                 style={{ flex: 1 }}
+                required
               />
               <Button type="submit" variant="primary" size="sm">
                 Add Note
@@ -625,9 +740,37 @@ export const CustomerAccountView: React.FC<CustomerAccountViewProps> = ({
             </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', fontSize: '12px' }}>
-              <div>
-                <span className="rv-text-muted">📅 Next Follow-up Due: </span>
-                <strong className="rv-num" style={{ color: 'var(--rv-text-primary)' }}>{nextAction.followUpDue}</strong>
+              {/* Interactive Follow-Up Schedule Control */}
+              <div style={{ background: 'var(--rv-bg-base)', border: '1px solid var(--rv-border-subtle)', padding: '8px 10px', borderRadius: '4px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                  <span className="rv-text-muted">📅 Next Follow-up:</span>
+                  <button
+                    style={{ background: 'none', border: 'none', color: 'var(--rv-status-callback-text)', fontSize: '11px', cursor: 'pointer', padding: 0 }}
+                    onClick={() => setShowScheduleFollowUpInput(!showScheduleFollowUpInput)}
+                  >
+                    {showScheduleFollowUpInput ? 'Close' : '✏️ Change'}
+                  </button>
+                </div>
+
+                {showScheduleFollowUpInput ? (
+                  <form onSubmit={handleScheduleFollowUpSubmit} style={{ display: 'flex', gap: '6px', marginTop: '4px' }}>
+                    <input
+                      type="text"
+                      className="rv-lead-note-input"
+                      value={customFollowUpTime}
+                      onChange={(e) => setCustomFollowUpTime(e.target.value)}
+                      placeholder="e.g. Tomorrow, 4 PM"
+                      style={{ flex: 1, fontSize: '11px' }}
+                    />
+                    <Button type="submit" variant="primary" size="sm">
+                      Save
+                    </Button>
+                  </form>
+                ) : (
+                  <strong className="rv-num" style={{ color: 'var(--rv-text-primary)', fontSize: '12px' }}>
+                    {nextAction.followUpDue}
+                  </strong>
+                )}
               </div>
 
               <div>
@@ -703,3 +846,4 @@ export const CustomerAccountView: React.FC<CustomerAccountViewProps> = ({
     </div>
   );
 };
+
