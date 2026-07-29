@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { ApiService, DEV_WORKSPACE_ID } from '../services/api';
 import { hasPermission, PermissionAction } from '../utils/permissions';
@@ -16,6 +16,8 @@ export interface UserProfile {
 interface AuthContextType {
   user: UserProfile | null;
   loading: boolean;
+  bootstrapping: boolean;
+  bootstrapError: string | null;
   isConfigured: boolean;
   can: (action: PermissionAction) => boolean;
   signIn: (email: string, password?: string) => Promise<{ error: string | null }>;
@@ -23,6 +25,8 @@ interface AuthContextType {
   signOut: () => Promise<void>;
   joinWorkspace: (targetWorkspaceId: string, role?: UserRole) => Promise<{ error: string | null }>;
   switchRole: (role: UserRole) => Promise<void>;
+  retryBootstrap: () => Promise<void>;
+  dismissBootstrapError: () => void;
   openAuthModal: () => void;
   closeAuthModal: () => void;
   isAuthModalOpen: boolean;
@@ -43,29 +47,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   });
 
   const [loading, setLoading] = useState(false);
+  const [bootstrapping, setBootstrapping] = useState<boolean>(isSupabaseConfigured);
+  const [bootstrapError, setBootstrapError] = useState<string | null>(null);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
-
-  useEffect(() => {
-    if (!isSupabaseConfigured) return;
-
-    // Check active session from Supabase
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session?.user) {
-        fetchUserProfile(session.user.id, session.user.email || '');
-      }
-    });
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (session?.user) {
-        fetchUserProfile(session.user.id, session.user.email || '');
-      } else {
-        setUser(null);
-        localStorage.removeItem('rv_active_user');
-      }
-    });
-
-    return () => subscription.unsubscribe();
-  }, []);
 
   const fetchUserProfile = async (userId: string, email: string) => {
     try {
@@ -89,11 +73,79 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
         // Idempotent: ensure workspace_members row exists for this session
         await ApiService.ensureWorkspaceMembership(userId, resolvedWorkspaceId, data.role || 'operations');
+      } else {
+        // Create basic profile context if profile row is missing
+        const fallbackProfile: UserProfile = {
+          id: userId,
+          email,
+          fullName: email.split('@')[0] || 'Ops Staff',
+          role: 'operations',
+          workspaceId: DEV_WORKSPACE_ID,
+        };
+        setUser(fallbackProfile);
+        localStorage.setItem('rv_active_user', JSON.stringify(fallbackProfile));
       }
-    } catch {
-      // Fallback — don't block auth on profile fetch failure
+    } catch (err: unknown) {
+      console.warn('[Rivet Auth] Profile resolution warning:', err);
     }
   };
+
+  const initAuthSession = useCallback(async () => {
+    if (!isSupabaseConfigured) {
+      setBootstrapping(false);
+      setBootstrapError(null);
+      return;
+    }
+
+    setBootstrapping(true);
+    setBootstrapError(null);
+
+    // Timeout safety race promise (6s)
+    const timeoutPromise = new Promise<{ timeout: true }>((resolve) =>
+      setTimeout(() => resolve({ timeout: true }), 6000)
+    );
+
+    try {
+      const getSessionPromise = supabase.auth.getSession();
+      const result = await Promise.race([getSessionPromise, timeoutPromise]);
+
+      if ('timeout' in result) {
+        console.warn('[Rivet Auth] Session resolution timed out (6s)');
+        setBootstrapError('Session resolution timed out. Please check your network connection.');
+        setBootstrapping(false);
+        return;
+      }
+
+      const session = result.data?.session;
+      if (session?.user) {
+        await fetchUserProfile(session.user.id, session.user.email || '');
+      } else {
+        // If no active Supabase session, keep stored user or clear if explicit logout
+      }
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Authentication session check failed';
+      setBootstrapError(msg);
+    } finally {
+      setBootstrapping(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    initAuthSession();
+
+    if (!isSupabaseConfigured) return;
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session?.user) {
+        fetchUserProfile(session.user.id, session.user.email || '');
+      } else if (_event === 'SIGNED_OUT') {
+        setUser(null);
+        localStorage.removeItem('rv_active_user');
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, [initAuthSession]);
 
   const can = (action: PermissionAction): boolean => {
     return hasPermission(user?.role, action);
@@ -177,6 +229,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       value={{
         user,
         loading,
+        bootstrapping,
+        bootstrapError,
         isConfigured: isSupabaseConfigured,
         can,
         signIn,
@@ -184,6 +238,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         signOut,
         joinWorkspace,
         switchRole,
+        retryBootstrap: initAuthSession,
+        dismissBootstrapError: () => setBootstrapError(null),
         openAuthModal: () => setIsAuthModalOpen(true),
         closeAuthModal: () => setIsAuthModalOpen(false),
         isAuthModalOpen,
@@ -199,4 +255,3 @@ export const useAuth = () => {
   if (!context) throw new Error('useAuth must be used within an AuthProvider');
   return context;
 };
-
