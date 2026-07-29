@@ -1,12 +1,12 @@
 import React, { useState, useMemo } from 'react';
-import { INITIAL_CUSTOMERS } from '../../data/mockData';
+import { INITIAL_CUSTOMERS, INITIAL_LEADS, INITIAL_JOBS, INITIAL_PAYMENTS } from '../../data/mockData';
 import { CustomerRecord, CustomerHealthStatus, SimulationMode } from '../../types/rivet';
 import { PageHeader } from '../ui/PageHeader';
 import { Card } from '../ui/Card';
 import { EmptyState } from '../ui/EmptyState';
 import { SkeletonRow } from '../ui/Skeleton';
 import { CustomerRow } from './CustomerRow';
-import { CustomerDetailDrawer } from './CustomerDetailDrawer';
+import { CustomerAccountView } from './CustomerAccountView';
 
 export const CustomersView: React.FC = () => {
   const [customers, setCustomers] = useState<CustomerRecord[]>(INITIAL_CUSTOMERS);
@@ -71,6 +71,22 @@ export const CustomersView: React.FC = () => {
     'Payment Due',
     'Repeat Client',
   ];
+
+  // If a customer is selected, display Customer / Account View V1 workspace
+  if (selectedCustomer) {
+    return (
+      <div>
+        <CustomerAccountView
+          customer={selectedCustomer}
+          allLeads={INITIAL_LEADS}
+          allJobs={INITIAL_JOBS}
+          allPayments={INITIAL_PAYMENTS}
+          onBack={() => setSelectedCustomer(null)}
+          onAddNote={handleAddNote}
+        />
+      </div>
+    );
+  }
 
   return (
     <div>
@@ -150,13 +166,6 @@ export const CustomersView: React.FC = () => {
           </ul>
         )}
       </Card>
-
-      {/* Customer Detail Drawer */}
-      <CustomerDetailDrawer
-        customer={selectedCustomer}
-        onClose={() => setSelectedCustomer(null)}
-        onAddNote={handleAddNote}
-      />
     </div>
   );
 };

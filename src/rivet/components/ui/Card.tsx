@@ -6,6 +6,7 @@ interface CardProps {
   headerAction?: React.ReactNode;
   children: React.ReactNode;
   className?: string;
+  style?: React.CSSProperties;
   dense?: boolean;
 }
 
@@ -15,10 +16,11 @@ export const Card: React.FC<CardProps> = ({
   headerAction,
   children,
   className = '',
+  style,
   dense = false,
 }) => {
   return (
-    <div className={`rv-card ${className}`}>
+    <div className={`rv-card ${className}`} style={style}>
       {(title || headerAction) && (
         <div className="rv-card__header">
           <div className="rv-card__title-group">
