@@ -473,7 +473,7 @@
 }
 
 .rv-btn--sm {
-  padding: 4px 8px;
+  padding: 4px 10px;
   font-size: 11px;
 }
 
@@ -483,14 +483,14 @@
 }
 
 .rv-btn--primary {
-  background-color: var(--rv-bg-surface-elevated);
-  color: var(--rv-status-job-text);
-  border-color: var(--rv-status-job-border);
+  background-color: var(--rv-brand-bg);
+  color: var(--rv-brand);
+  border-color: var(--rv-brand-border);
   font-weight: 600;
 }
 
 .rv-btn--primary:hover {
-  background-color: var(--rv-bg-surface-hover);
+  background-color: #1a3835;
   border-color: var(--rv-brand);
 }
 
@@ -503,6 +503,18 @@
 .rv-btn--secondary:hover {
   background-color: var(--rv-bg-surface-hover);
   border-color: var(--rv-border-strong);
+}
+
+.rv-btn--overdue {
+  background-color: var(--rv-status-overdue-bg);
+  color: var(--rv-status-overdue-text);
+  border-color: var(--rv-status-overdue-border);
+  font-weight: 600;
+}
+
+.rv-btn--overdue:hover {
+  background-color: rgba(245, 158, 11, 0.2);
+  border-color: var(--rv-status-overdue-text);
 }
 
 .rv-btn--ghost {
