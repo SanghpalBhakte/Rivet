@@ -18,7 +18,7 @@ import {
 // Default initial data for persistent local cache
 const INITIAL_CUSTOMERS: CustomerRecord[] = [
   {
-    id: 'c0000001-0000-0000-0000-000000000001',
+    id: 'c0000000-0000-0000-0000-000000000001',
     customerCode: 'CUST-101',
     name: 'Rajesh Sharma',
     phone: '+91 98220 12345',
@@ -38,7 +38,7 @@ const INITIAL_CUSTOMERS: CustomerRecord[] = [
     primaryActionLabel: 'Log Internal Note',
   },
   {
-    id: 'c0000002-0000-0000-0000-000000000002',
+    id: 'c0000000-0000-0000-0000-000000000002',
     customerCode: 'CUST-102',
     name: 'Priya Patel',
     phone: '+91 98221 67890',
@@ -59,7 +59,7 @@ const INITIAL_CUSTOMERS: CustomerRecord[] = [
 
 const INITIAL_LEADS: Lead[] = [
   {
-    id: 'l0000001-0000-0000-0000-000000000001',
+    id: '1ead0000-0000-0000-0000-000000000001',
     customerName: 'Priya Patel',
     customerPhone: '+91 98221 67890',
     customerEmail: 'priya.patel@example.com',
@@ -76,7 +76,7 @@ const INITIAL_LEADS: Lead[] = [
     primaryActionLabel: 'Follow-up Callback',
   },
   {
-    id: 'l0000002-0000-0000-0000-000000000002',
+    id: '1ead0000-0000-0000-0000-000000000002',
     customerName: 'Rajesh Sharma',
     customerPhone: '+91 98220 12345',
     customerEmail: 'rajesh.sharma@example.com',
@@ -115,27 +115,27 @@ const INITIAL_JOBS: Job[] = [
 
 const INITIAL_TASKS: TaskRecord[] = [
   {
-    id: 't0000001-0000-0000-0000-000000000001',
+    id: 'da000000-0000-0000-0000-000000000001',
     title: 'Confirm balance payment of ₹1,200 with Rajesh Sharma',
     type: 'Payment Reminder',
     status: 'Overdue',
     priority: 'Critical',
     dueDateTime: 'Today, 4:00 PM',
     assignee: 'Janai Desk',
-    linkedEntityId: 'p0000001-0000-0000-0000-000000000001',
+    linkedEntityId: 'fa000000-0000-0000-0000-000000000001',
     linkedEntityType: 'Payment',
     linkedEntityName: 'Rajesh Sharma',
     notes: 'Client promised UPI settlement after airport arrival.',
   },
   {
-    id: 't0000002-0000-0000-0000-000000000002',
+    id: 'da000000-0000-0000-0000-000000000002',
     title: 'Follow up on corporate sedan quote approval',
     type: 'Quote Follow-up',
     status: 'Due Soon',
     priority: 'High',
     dueDateTime: 'Tomorrow, 11:30 AM',
     assignee: 'Suresh M.',
-    linkedEntityId: 'l0000001-0000-0000-0000-000000000001',
+    linkedEntityId: '1ead0000-0000-0000-0000-000000000001',
     linkedEntityType: 'Lead',
     linkedEntityName: 'Priya Patel',
     notes: 'Priya requested custom GST invoice breakdown.',
@@ -144,7 +144,7 @@ const INITIAL_TASKS: TaskRecord[] = [
 
 const INITIAL_PAYMENTS: PaymentRecord[] = [
   {
-    id: 'p0000001-0000-0000-0000-000000000001',
+    id: 'fa000000-0000-0000-0000-000000000001',
     paymentCode: 'PAY-401',
     customerName: 'Rajesh Sharma',
     customerPhone: '+91 98220 12345',

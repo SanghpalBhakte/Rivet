@@ -90,15 +90,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (isSupabaseConfigured && password) {
       const { error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) return { error: error.message };
+      // onAuthStateChange will call fetchUserProfile — don't create a fake profile here
+      setIsAuthModalOpen(false);
+      return { error: null };
     }
 
-    // Local / Dev Fallback Sign In
+    // Dev-only fallback: Supabase not configured
     const profile: UserProfile = {
       id: `usr-${Date.now().toString(36)}`,
       email,
       fullName: email.split('@')[0].replace('.', ' ').toUpperCase(),
       role: email.includes('admin') ? 'admin' : email.includes('account') ? 'accounts' : 'operations',
-      workspaceId: 'ws-central-hq',
+      workspaceId: '00000000-0000-0000-0000-000000000001',
     };
     setUser(profile);
     localStorage.setItem('rv_active_user', JSON.stringify(profile));
