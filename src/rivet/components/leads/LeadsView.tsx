@@ -10,9 +10,13 @@ import { LeadDetailDrawer } from './LeadDetailDrawer';
 import { NewInquiryModal } from './NewInquiryModal';
 import { Button } from '../ui/Button';
 import { ApiService } from '../../services/api';
+import { useAuth } from '../../context/AuthContext';
 
 export const LeadsView: React.FC = () => {
-  const [leads, setLeads] = useState<Lead[]>(INITIAL_LEADS);
+  const { user, can } = useAuth();
+  const actor = { id: user?.id, name: user?.fullName, workspaceId: user?.workspaceId };
+
+  const [leads, setLeads] = useState<Lead[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [stageFilter, setStageFilter] = useState<'All' | LeadStage>('All');
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
@@ -25,7 +29,11 @@ export const LeadsView: React.FC = () => {
 
   // Stage transition workflow handler
   const handleStageChange = (leadId: string, newStage: LeadStage) => {
-    ApiService.updateLeadStage(leadId, newStage).then(setLeads).catch(console.error);
+    if (!can('lead:update_stage')) {
+      alert(`Role "${user?.role}" does not have permission to update lead stages.`);
+      return;
+    }
+    ApiService.updateLeadStage(leadId, newStage, actor).then(setLeads).catch(console.error);
   };
 
   // Follow-up date/time schedule handler
@@ -157,12 +165,20 @@ export const LeadsView: React.FC = () => {
             )}
           </div>
 
-          {/* New Inquiry Action Button */}
+          {/* New Inquiry Action Button — Role Guarded */}
           <Button
             variant="primary"
             size="md"
-            onClick={() => setIsNewInquiryOpen(true)}
-            style={{ whiteSpace: 'nowrap' }}
+            onClick={() => {
+              if (!can('lead:create')) {
+                alert(`Role "${user?.role}" cannot create new inquiries. Contact an Admin or Operations desk.`);
+                return;
+              }
+              setIsNewInquiryOpen(true);
+            }}
+            disabled={!can('lead:create')}
+            title={!can('lead:create') ? `Role (${user?.role}) restricted from creating leads` : 'Create new lead inquiry'}
+            style={{ whiteSpace: 'nowrap', opacity: can('lead:create') ? 1 : 0.6 }}
           >
             ⚡ + New Inquiry
           </Button>

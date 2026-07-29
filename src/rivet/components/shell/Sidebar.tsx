@@ -1,8 +1,9 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { ActiveModule } from '../../types/rivet';
 import { BUILD_INFO } from '../../config/buildInfo';
 import { useAuth } from '../../context/AuthContext';
 import { Badge } from '../ui/Badge';
+import { WorkspaceModal } from '../auth/WorkspaceModal';
 
 interface SidebarProps {
   activeTab?: ActiveModule;
@@ -14,6 +15,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onSelectTab,
 }) => {
   const { user, signOut, openAuthModal, isConfigured } = useAuth();
+  const [isWsModalOpen, setIsWsModalOpen] = useState(false);
 
   return (
     <aside className="rv-sidebar" aria-label="Main Navigation">
@@ -107,19 +109,27 @@ export const Sidebar: React.FC<SidebarProps> = ({
               <span style={{ fontSize: '11px', fontWeight: 700, color: 'var(--rv-text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                 {user.fullName}
               </span>
-              <Badge variant={user.role === 'admin' ? 'completed' : 'job'}>
+              <Badge variant={user.role === 'admin' ? 'completed' : user.role === 'accounts' ? 'callback' : 'job'}>
                 {user.role.toUpperCase()}
               </Badge>
             </div>
             <div style={{ fontSize: '10px', color: 'var(--rv-text-muted)', marginBottom: '8px', overflow: 'hidden', textOverflow: 'ellipsis' }}>
               {user.email}
             </div>
-            <button
-              onClick={() => signOut()}
-              style={{ width: '100%', background: 'var(--rv-bg-base)', border: '1px solid var(--rv-border-default)', color: 'var(--rv-text-secondary)', padding: '3px 8px', borderRadius: '4px', fontSize: '10px', cursor: 'pointer' }}
-            >
-              Sign Out
-            </button>
+            <div style={{ display: 'flex', gap: '4px' }}>
+              <button
+                onClick={() => setIsWsModalOpen(true)}
+                style={{ flex: 1, background: 'var(--rv-bg-base)', border: '1px solid var(--rv-border-default)', color: 'var(--rv-brand)', padding: '3px 6px', borderRadius: '4px', fontSize: '10px', fontWeight: 600, cursor: 'pointer' }}
+              >
+                ⚙️ Workspace
+              </button>
+              <button
+                onClick={() => signOut()}
+                style={{ flex: 1, background: 'var(--rv-bg-base)', border: '1px solid var(--rv-border-default)', color: 'var(--rv-text-secondary)', padding: '3px 6px', borderRadius: '4px', fontSize: '10px', cursor: 'pointer' }}
+              >
+                Sign Out
+              </button>
+            </div>
           </div>
         ) : (
           <div>
@@ -146,6 +156,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
           v{BUILD_INFO.version} • cf-pages@{BUILD_INFO.commitHash}
         </div>
       </div>
+
+      <WorkspaceModal
+        isOpen={isWsModalOpen}
+        onClose={() => setIsWsModalOpen(false)}
+      />
     </aside>
   );
 };

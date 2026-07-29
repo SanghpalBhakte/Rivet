@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { ApiService, DEV_WORKSPACE_ID } from '../services/api';
+import { hasPermission, PermissionAction } from '../utils/permissions';
 
 export type UserRole = 'admin' | 'operations' | 'accounts' | 'viewer';
 
@@ -16,9 +17,12 @@ interface AuthContextType {
   user: UserProfile | null;
   loading: boolean;
   isConfigured: boolean;
+  can: (action: PermissionAction) => boolean;
   signIn: (email: string, password?: string) => Promise<{ error: string | null }>;
   signUp: (email: string, password?: string, fullName?: string) => Promise<{ error: string | null }>;
   signOut: () => Promise<void>;
+  joinWorkspace: (targetWorkspaceId: string, role?: UserRole) => Promise<{ error: string | null }>;
+  switchRole: (role: UserRole) => Promise<void>;
   openAuthModal: () => void;
   closeAuthModal: () => void;
   isAuthModalOpen: boolean;
@@ -91,11 +95,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const can = (action: PermissionAction): boolean => {
+    return hasPermission(user?.role, action);
+  };
+
   const signIn = async (email: string, password?: string) => {
     if (isSupabaseConfigured && password) {
       const { error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) return { error: error.message };
-      // onAuthStateChange will call fetchUserProfile — don't create a fake profile here
       setIsAuthModalOpen(false);
       return { error: null };
     }
@@ -106,7 +113,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       email,
       fullName: email.split('@')[0].replace('.', ' ').toUpperCase(),
       role: email.includes('admin') ? 'admin' : email.includes('account') ? 'accounts' : 'operations',
-      workspaceId: '00000000-0000-0000-0000-000000000001',
+      workspaceId: DEV_WORKSPACE_ID,
     };
     setUser(profile);
     localStorage.setItem('rv_active_user', JSON.stringify(profile));
@@ -127,6 +134,36 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return signIn(email, password);
   };
 
+  const joinWorkspace = async (targetWorkspaceId: string, role: UserRole = 'operations') => {
+    if (!user) return { error: 'Must be logged in to join a workspace' };
+
+    try {
+      const res = await ApiService.joinWorkspace(user.id, targetWorkspaceId, role, user.fullName);
+      const updatedUser: UserProfile = {
+        ...user,
+        workspaceId: res.workspaceId,
+        role: res.role,
+      };
+      setUser(updatedUser);
+      localStorage.setItem('rv_active_user', JSON.stringify(updatedUser));
+      return { error: null };
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Failed to join workspace';
+      return { error: msg };
+    }
+  };
+
+  const switchRole = async (newRole: UserRole) => {
+    if (!user) return;
+    const updated = { ...user, role: newRole };
+    setUser(updated);
+    localStorage.setItem('rv_active_user', JSON.stringify(updated));
+
+    if (isSupabaseConfigured) {
+      await supabase.from('user_profiles').update({ role: newRole }).eq('id', user.id);
+    }
+  };
+
   const signOut = async () => {
     if (isSupabaseConfigured) {
       await supabase.auth.signOut();
@@ -141,9 +178,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         user,
         loading,
         isConfigured: isSupabaseConfigured,
+        can,
         signIn,
         signUp,
         signOut,
+        joinWorkspace,
+        switchRole,
         openAuthModal: () => setIsAuthModalOpen(true),
         closeAuthModal: () => setIsAuthModalOpen(false),
         isAuthModalOpen,
@@ -159,3 +199,4 @@ export const useAuth = () => {
   if (!context) throw new Error('useAuth must be used within an AuthProvider');
   return context;
 };
+

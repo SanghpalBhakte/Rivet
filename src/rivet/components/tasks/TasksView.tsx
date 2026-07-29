@@ -8,9 +8,13 @@ import { EmptyState } from '../ui/EmptyState';
 import { SkeletonRow } from '../ui/Skeleton';
 import { TaskItem } from '../ui/TaskItem';
 import { ApiService } from '../../services/api';
+import { useAuth } from '../../context/AuthContext';
 
 export const TasksView: React.FC = () => {
-  const [tasks, setTasks] = useState<TaskRecord[]>(INITIAL_TASKS);
+  const { user, can } = useAuth();
+  const actor = { id: user?.id, name: user?.fullName, workspaceId: user?.workspaceId };
+
+  const [tasks, setTasks] = useState<TaskRecord[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<'All' | TaskStatus>('All');
   const [typeFilter, setTypeFilter] = useState<'All' | TaskType>('All');
@@ -88,7 +92,11 @@ export const TasksView: React.FC = () => {
   }, [filteredTasks]);
 
   const handleStatusChange = (task: TaskRecord, newStatus: TaskStatus) => {
-    ApiService.updateTaskStatus(task.id, newStatus)
+    if (!can('task:update_status')) {
+      alert(`Role "${user?.role}" does not have permission to update task status.`);
+      return;
+    }
+    ApiService.updateTaskStatus(task.id, newStatus, actor)
       .then(setTasks)
       .catch(console.error);
     showToast(`Marked task "${task.title}" as ${newStatus}`);
@@ -97,6 +105,10 @@ export const TasksView: React.FC = () => {
   const handleCreateTask = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newTitle.trim()) return;
+    if (!can('task:create')) {
+      alert(`Role "${user?.role}" cannot create new tasks.`);
+      return;
+    }
 
     ApiService.createTask({
       title: newTitle.trim(),
@@ -107,7 +119,7 @@ export const TasksView: React.FC = () => {
       linkedEntityName: newLinkedEntity || undefined,
       linkedEntityType: newLinkedEntity ? 'Lead' : undefined,
       notes: newNotes.trim() || undefined,
-    })
+    }, actor.workspaceId, actor)
       .then(setTasks)
       .catch(console.error);
 

@@ -9,6 +9,7 @@ interface PaymentDetailDrawerProps {
   onRecordPayment: (paymentId: string, receivedAmount: number, method: string, noteText?: string) => void;
   onMarkFullyPaid: (paymentId: string) => void;
   onAddNote: (paymentId: string, noteText: string) => void;
+  canRecordPayment?: boolean;
 }
 
 export const PaymentDetailDrawer: React.FC<PaymentDetailDrawerProps> = ({
@@ -17,6 +18,7 @@ export const PaymentDetailDrawer: React.FC<PaymentDetailDrawerProps> = ({
   onRecordPayment,
   onMarkFullyPaid,
   onAddNote,
+  canRecordPayment = true,
 }) => {
   const [recordAmountInput, setRecordAmountInput] = useState('');
   const [methodInput, setMethodInput] = useState('UPI (Google Pay / PhonePe)');
@@ -26,6 +28,7 @@ export const PaymentDetailDrawer: React.FC<PaymentDetailDrawerProps> = ({
 
   const handleRecordSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (!canRecordPayment) return;
     const amt = parseFloat(recordAmountInput);
     if (isNaN(amt) || amt <= 0) return;
     onRecordPayment(payment.id, amt, methodInput, `Received ₹${amt.toLocaleString('en-IN')} via ${methodInput}`);
@@ -63,65 +66,37 @@ export const PaymentDetailDrawer: React.FC<PaymentDetailDrawerProps> = ({
         <div className="rv-lead-drawer__header">
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
-              <Badge variant={getStatusBadgeVariant(payment.status)}>{payment.status.toUpperCase()}</Badge>
-              <span className="rv-tabular" style={{ fontSize: '11px', color: 'var(--rv-text-muted)', fontWeight: 600 }}>
-                {payment.paymentCode} • {payment.jobCode}
-              </span>
+              <h2 className="rv-lead-drawer__title">{payment.paymentCode}</h2>
+              <Badge variant={getStatusBadgeVariant(payment.status)}>{payment.status}</Badge>
             </div>
-            <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 600, color: 'var(--rv-text-primary)' }}>
-              {payment.customerName}
-            </h3>
+            <p className="rv-lead-drawer__subtitle">
+              {payment.customerName} • {payment.serviceTitle} ({payment.jobCode})
+            </p>
           </div>
-          <Button variant="ghost" size="sm" onClick={onClose} aria-label="Close payment drawer">
-            ✕
-          </Button>
+          <button className="rv-search-clear" onClick={onClose} title="Close drawer">✕</button>
         </div>
 
-        {/* Drawer Body */}
-        <div className="rv-lead-drawer__body">
-          {/* Service Title */}
+        {/* Drawer Content */}
+        <div className="rv-lead-drawer__content">
+          {/* Financial Breakdown Card */}
           <div className="rv-lead-drawer__section">
-            <span className="rv-lead-drawer__label">Service / Work Order Reference</span>
-            <div style={{ fontSize: '14px', fontWeight: 600, color: 'var(--rv-text-primary)', marginTop: '2px' }}>
-              {payment.serviceTitle}
-            </div>
-            <div style={{ fontSize: '12px', color: 'var(--rv-text-muted)', marginTop: '4px' }}>
-              Customer Phone: <span className="rv-num">{payment.customerPhone}</span>
-            </div>
-          </div>
-
-          {/* Scannable Financial Summary Card */}
-          <div className="rv-lead-drawer__section" style={{ background: 'var(--rv-bg-base)', padding: '12px', borderRadius: '6px', border: '1px solid var(--rv-border-default)' }}>
-            <span className="rv-lead-drawer__label" style={{ marginBottom: '6px' }}>Financial Breakdown</span>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', fontSize: '13px', marginTop: '6px' }}>
-              <div>
-                <span className="rv-text-muted">Total Amount: </span>
-                <strong className="rv-num">{formatRupees(payment.totalAmount)}</strong>
+            <span className="rv-lead-drawer__label">Ledger Summary</span>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '8px', marginTop: '8px' }}>
+              <div style={{ background: 'var(--rv-bg-surface-elevated)', padding: '8px', borderRadius: '4px' }}>
+                <span style={{ fontSize: '10px', color: 'var(--rv-text-muted)' }}>Total Contract</span>
+                <div className="rv-num" style={{ fontWeight: 700, fontSize: '14px' }}>{formatRupees(payment.totalAmount)}</div>
               </div>
-              <div>
-                <span className="rv-text-muted">Amount Paid: </span>
-                <span className="rv-num" style={{ color: 'var(--rv-status-completed-text)', fontWeight: 600 }}>
-                  {formatRupees(payment.amountPaid)}
-                </span>
+              <div style={{ background: 'var(--rv-bg-surface-elevated)', padding: '8px', borderRadius: '4px' }}>
+                <span style={{ fontSize: '10px', color: 'var(--rv-text-muted)' }}>Amount Collected</span>
+                <div className="rv-num" style={{ fontWeight: 700, fontSize: '14px', color: 'var(--rv-status-completed-text)' }}>{formatRupees(payment.amountPaid)}</div>
               </div>
-              <div>
-                <span className="rv-text-muted">Balance Due: </span>
-                <strong
-                  className="rv-num"
-                  style={{
-                    color: payment.balanceDue > 0 ? (payment.status === 'Overdue' ? 'var(--rv-status-overdue-text)' : 'var(--rv-text-primary)') : 'var(--rv-text-muted)',
-                  }}
-                >
-                  {formatRupees(payment.balanceDue)}
-                </strong>
-              </div>
-              <div>
-                <span className="rv-text-muted">Due Date: </span>
-                <span className="rv-num">{payment.dueDate}</span>
+              <div style={{ background: 'var(--rv-bg-surface-elevated)', padding: '8px', borderRadius: '4px' }}>
+                <span style={{ fontSize: '10px', color: 'var(--rv-text-muted)' }}>Balance Outstanding</span>
+                <div className="rv-num" style={{ fontWeight: 700, fontSize: '14px', color: payment.balanceDue > 0 ? 'var(--rv-status-overdue-text)' : 'var(--rv-text-primary)' }}>{formatRupees(payment.balanceDue)}</div>
               </div>
             </div>
 
-            {payment.balanceDue > 0 && (
+            {payment.balanceDue > 0 && canRecordPayment && (
               <div style={{ marginTop: '12px', paddingTop: '8px', borderTop: '1px solid var(--rv-border-subtle)' }}>
                 <Button variant="overdue" size="sm" onClick={() => onMarkFullyPaid(payment.id)}>
                   ✓ Mark Fully Paid & Settle
@@ -130,36 +105,42 @@ export const PaymentDetailDrawer: React.FC<PaymentDetailDrawerProps> = ({
             )}
           </div>
 
-          {/* Record Partial / Received Payment Form */}
+          {/* Record Partial / Received Payment Form — Role Guarded */}
           {payment.balanceDue > 0 && (
             <div className="rv-lead-drawer__section">
               <span className="rv-lead-drawer__label">Record Received Payment</span>
-              <form onSubmit={handleRecordSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '8px' }}>
-                <div style={{ display: 'flex', gap: '8px' }}>
-                  <input
-                    type="number"
-                    className="rv-lead-note-input"
-                    placeholder={`Amount in ₹ (max ${payment.balanceDue})`}
-                    value={recordAmountInput}
-                    onChange={(e) => setRecordAmountInput(e.target.value)}
-                    style={{ flex: 1 }}
-                  />
-                  <select
-                    className="rv-lead-note-input"
-                    value={methodInput}
-                    onChange={(e) => setMethodInput(e.target.value)}
-                    style={{ width: '160px' }}
-                  >
-                    <option value="UPI (Google Pay / PhonePe)">UPI / QR</option>
-                    <option value="Cash on Drop">Cash on Drop</option>
-                    <option value="Bank NEFT / IMPS">Bank NEFT/IMPS</option>
-                    <option value="Corporate Invoice">Corporate Invoice</option>
-                  </select>
+              {canRecordPayment ? (
+                <form onSubmit={handleRecordSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '8px' }}>
+                  <div style={{ display: 'flex', gap: '8px' }}>
+                    <input
+                      type="number"
+                      className="rv-lead-note-input"
+                      placeholder={`Amount in ₹ (max ${payment.balanceDue})`}
+                      value={recordAmountInput}
+                      onChange={(e) => setRecordAmountInput(e.target.value)}
+                      style={{ flex: 1 }}
+                    />
+                    <select
+                      className="rv-lead-note-input"
+                      value={methodInput}
+                      onChange={(e) => setMethodInput(e.target.value)}
+                      style={{ width: '160px' }}
+                    >
+                      <option value="UPI (Google Pay / PhonePe)">UPI / QR</option>
+                      <option value="Cash on Drop">Cash on Drop</option>
+                      <option value="Bank NEFT / IMPS">Bank NEFT/IMPS</option>
+                      <option value="Corporate Invoice">Corporate Invoice</option>
+                    </select>
+                  </div>
+                  <Button type="submit" variant="primary" size="sm">
+                    + Record Received Payment
+                  </Button>
+                </form>
+              ) : (
+                <div style={{ marginTop: '8px', padding: '10px', background: 'var(--rv-bg-surface-elevated)', border: '1px solid var(--rv-border-default)', borderRadius: '6px', fontSize: '11px', color: 'var(--rv-text-muted)' }}>
+                  🔒 Payment collection restricted to Accounts & Admin roles.
                 </div>
-                <Button type="submit" variant="primary" size="sm">
-                  + Record Received Payment
-                </Button>
-              </form>
+              )}
             </div>
           )}
 

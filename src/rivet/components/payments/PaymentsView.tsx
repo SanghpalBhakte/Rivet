@@ -8,9 +8,13 @@ import { SkeletonRow } from '../ui/Skeleton';
 import { PaymentRow } from './PaymentRow';
 import { PaymentDetailDrawer } from './PaymentDetailDrawer';
 import { ApiService } from '../../services/api';
+import { useAuth } from '../../context/AuthContext';
 
 export const PaymentsView: React.FC = () => {
-  const [payments, setPayments] = useState<PaymentRecord[]>(INITIAL_PAYMENTS);
+  const { user, can } = useAuth();
+  const actor = { id: user?.id, name: user?.fullName, workspaceId: user?.workspaceId };
+
+  const [payments, setPayments] = useState<PaymentRecord[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<'All' | PaymentStatus>('All');
   const [selectedPayment, setSelectedPayment] = useState<PaymentRecord | null>(null);
@@ -44,7 +48,11 @@ export const PaymentsView: React.FC = () => {
     method: string,
     noteText?: string
   ) => {
-    ApiService.recordPaymentCollection(paymentId, receivedAmount, method, noteText)
+    if (!can('payment:record')) {
+      alert(`Role "${user?.role}" does not have permission to record payments.`);
+      return;
+    }
+    ApiService.recordPaymentCollection(paymentId, receivedAmount, method, noteText, actor)
       .then((updated) => {
         setPayments(updated);
         if (selectedPayment?.id === paymentId) {
@@ -215,6 +223,7 @@ export const PaymentsView: React.FC = () => {
         onRecordPayment={handleRecordPayment}
         onMarkFullyPaid={handleMarkFullyPaid}
         onAddNote={handleAddNote}
+        canRecordPayment={can('payment:record')}
       />
     </div>
   );

@@ -12,7 +12,7 @@ import { ApiService } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 
 export const JobsView: React.FC = () => {
-  const { user } = useAuth();
+  const { user, can } = useAuth();
   const actor = { id: user?.id, name: user?.fullName, workspaceId: user?.workspaceId };
 
   const [jobs, setJobs] = useState<Job[]>([]);
@@ -55,6 +55,10 @@ export const JobsView: React.FC = () => {
 
   // Status update handler — persists to Supabase + logs activity
   const handleUpdateStatus = (jobId: string, newStatus: JobStatus) => {
+    if (!can('job:update_status')) {
+      alert(`Role "${user?.role}" does not have permission to update job dispatch status.`);
+      return;
+    }
     ApiService.updateJobStatus(jobId, newStatus, actor)
       .then((updatedJobs) => {
         setJobs(updatedJobs);
@@ -228,7 +232,20 @@ export const JobsView: React.FC = () => {
             </div>
           </div>
 
-          <Button variant="primary" size="sm" onClick={() => setIsNewJobModalOpen(true)}>
+          <Button
+            variant="primary"
+            size="sm"
+            onClick={() => {
+              if (!can('job:create')) {
+                alert(`Role "${user?.role}" cannot create dispatch work orders. Contact Operations or Admin.`);
+                return;
+              }
+              setIsNewJobModalOpen(true);
+            }}
+            disabled={!can('job:create')}
+            title={!can('job:create') ? `Role (${user?.role}) restricted from creating jobs` : 'Create new work order'}
+            style={{ opacity: can('job:create') ? 1 : 0.6 }}
+          >
             + New Work Order
           </Button>
         </div>

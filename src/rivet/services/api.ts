@@ -15,6 +15,8 @@ import {
   TaskType,
   TaskPriority,
 } from '../types/rivet';
+import { hasPermission, PermissionAction } from '../utils/permissions';
+import { UserRole } from '../context/AuthContext';
 
 /* ============================================================================
    SEED WORKSPACE — matches seed.sql
@@ -373,6 +375,87 @@ export const ApiService = {
         role,
       });
     }
+  },
+
+  /**
+   * Allows an authenticated user to join an existing workspace by workspace_id.
+   * Updates user_profiles and workspace_members in Supabase.
+   */
+  async joinWorkspace(
+    userId: string,
+    targetWorkspaceId: string,
+    role: UserRole = 'operations',
+    actorName?: string
+  ): Promise<{ workspaceId: string; role: UserRole }> {
+    if (!isSupabaseConfigured) {
+      return { workspaceId: targetWorkspaceId, role };
+    }
+
+    // 1. Verify workspace exists
+    const { data: ws, error: wsErr } = await supabase
+      .from('workspaces')
+      .select('id, name')
+      .eq('id', targetWorkspaceId)
+      .single();
+
+    if (wsErr || !ws) {
+      throw new Error(`Workspace not found with ID: ${targetWorkspaceId}`);
+    }
+
+    // 2. Insert into workspace_members
+    const { error: memErr } = await supabase.from('workspace_members').upsert(
+      {
+        workspace_id: targetWorkspaceId,
+        user_id: userId,
+        role,
+      },
+      { onConflict: 'workspace_id,user_id' }
+    );
+    if (memErr) throw new Error(`Failed to join workspace members: ${memErr.message}`);
+
+    // 3. Update user_profiles
+    const { error: profErr } = await supabase
+      .from('user_profiles')
+      .update({
+        workspace_id: targetWorkspaceId,
+        role,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', userId);
+
+    if (profErr) throw new Error(`Failed to update profile workspace: ${profErr.message}`);
+
+    await _logActivity({
+      workspaceId: targetWorkspaceId,
+      actorId: userId,
+      actorName: actorName || 'Ops Staff',
+      category: 'workspace',
+      title: 'User joined workspace',
+      description: `User ${userId} joined workspace ${ws.name || targetWorkspaceId} with role ${role}`,
+    });
+
+    return { workspaceId: targetWorkspaceId, role };
+  },
+
+  /**
+   * Fetches member list for a workspace
+   */
+  async getWorkspaceMembers(workspaceId: string = DEV_WORKSPACE_ID): Promise<Array<{ id: string; userId: string; role: string; email?: string }>> {
+    if (!isSupabaseConfigured) return [];
+    const { data, error } = await supabase
+      .from('workspace_members')
+      .select('id, user_id, role')
+      .eq('workspace_id', workspaceId);
+
+    if (error) {
+      console.error('[Rivet] getWorkspaceMembers:', error.message);
+      return [];
+    }
+    return (data || []).map((m: Record<string, unknown>) => ({
+      id: m.id as string,
+      userId: m.user_id as string,
+      role: (m.role as string) || 'operations',
+    }));
   },
 
   /* ── ACTIVITY LOGS ──────────────────────────────────────────────────────── */
