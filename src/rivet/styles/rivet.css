@@ -119,6 +119,20 @@
   margin: 0 auto;
 }
 
+/* Dashboard Grid Layout */
+.rv-dashboard-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 340px;
+  gap: var(--rv-space-4);
+  margin-bottom: var(--rv-space-4);
+}
+
+@media (max-width: 960px) {
+  .rv-dashboard-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
 /* Sidebar Styles */
 .rv-sidebar {
   width: 220px;

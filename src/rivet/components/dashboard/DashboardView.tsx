@@ -9,6 +9,7 @@ import { QueueItem, SimulationMode } from '../../types/rivet';
 import { PageHeader } from '../ui/PageHeader';
 import { PipelineStrip } from '../ui/PipelineStrip';
 import { TodayQueue } from './TodayQueue';
+import { TodayReminders } from './TodayReminders';
 import { SummaryColumn } from './SummaryColumn';
 import { RecentActivity } from './RecentActivity';
 import { Button } from '../ui/Button';
@@ -44,7 +45,7 @@ export const DashboardView: React.FC = () => {
       {/* Clean Page Header with title and short operational subline */}
       <PageHeader
         title="Operations Control Room"
-        subline="Janai Tours & Service Ops • Monday, Jul 27 • 6 operational items in queue"
+        subline="Janai Tours & Service Ops • Monday, Jul 27 • Operational items & reminders"
         simMode={simMode}
         onSimModeChange={handleSimModeChange}
       />
@@ -64,13 +65,17 @@ export const DashboardView: React.FC = () => {
       {/* Pipeline stage counter strip */}
       <PipelineStrip stages={INITIAL_PIPELINE_STAGES} simMode={simMode} />
 
-      {/* Dashboard Grid: Main Hero (Today's Queue) + Secondary Summary Column */}
+      {/* Dashboard Grid: Main Hero (Today's Queue + Today's Reminders) + Secondary Summary Column */}
       <div className="rv-dashboard-grid">
         {/* Main Hero Section */}
-        <section aria-label="Today's Priority Operational Queue">
+        <section aria-label="Today's Operational Queue and Reminders" style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
           <TodayQueue
             items={queueItems}
             onActionComplete={handleActionComplete}
+            simMode={simMode}
+          />
+
+          <TodayReminders
             simMode={simMode}
           />
         </section>
