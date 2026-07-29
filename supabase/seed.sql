@@ -12,8 +12,8 @@ ON CONFLICT (id) DO NOTHING;
 INSERT INTO public.customers (id, workspace_id, customer_code, name, phone, email, city, health_status, latest_service_ref, total_spent, outstanding_balance, next_follow_up, primary_action_label)
 VALUES 
 ('c0000001-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000000001', 'CUST-101', 'Rajesh Sharma', '+91 98220 12345', 'rajesh.sharma@example.com', 'Airport Area', 'Payment Due', 'JOB-901', 14200.00, 1200.00, 'Today, 4:00 PM', 'Log Internal Note'),
-('c0000002-0000-0000-0000-000000000002', '00000000-0000-0000-0000-000000000002', 'CUST-102', 'Priya Patel', '+91 98221 67890', 'priya.patel@example.com', 'Civil Lines', 'Active Lead', 'LD-502', 8500.00, 0.00, 'Tomorrow, 11:30 AM', 'Schedule Follow-up'),
-('c0000003-0000-0000-0000-000000000003', '00000000-0000-0000-0000-000000000003', 'CUST-103', 'Vikramaditya Rao', '+91 98222 11223', 'v.rao@example.com', 'IT Park Zone', 'Repeat Client', 'JOB-903', 42500.00, 0.00, 'Aug 2, 2:00 PM', 'Log Internal Note')
+('c0000002-0000-0000-0000-000000000002', '00000000-0000-0000-0000-000000000001', 'CUST-102', 'Priya Patel', '+91 98221 67890', 'priya.patel@example.com', 'Civil Lines', 'Active Lead', 'LD-502', 8500.00, 0.00, 'Tomorrow, 11:30 AM', 'Schedule Follow-up'),
+('c0000003-0000-0000-0000-000000000003', '00000000-0000-0000-0000-000000000001', 'CUST-103', 'Vikramaditya Rao', '+91 98222 11223', 'v.rao@example.com', 'IT Park Zone', 'Repeat Client', 'JOB-903', 42500.00, 0.00, 'Aug 2, 2:00 PM', 'Log Internal Note')
 ON CONFLICT (id) DO NOTHING;
 
 -- 3. Insert Seed Leads
@@ -27,7 +27,7 @@ ON CONFLICT (id) DO NOTHING;
 INSERT INTO public.jobs (id, workspace_id, job_code, customer_id, lead_id, customer_name, customer_phone, service_title, scheduled_date_time, status, driver_name, vehicle_details, pickup_location, drop_location, total_amount, advance_paid, due_amount, payment_method, payment_status, primary_action_label)
 VALUES
 ('j0000001-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000000001', 'JOB-901', 'c0000001-0000-0000-0000-000000000001', 'l0000002-0000-0000-0000-000000000002', 'Rajesh Sharma', '+91 98220 12345', 'Airport Express Pickup — Ertiga', 'Today, 4:30 PM', 'In Progress', 'Ramesh K.', 'Swift Dzire MH-31 EA 4091', 'Airport Terminal', 'City Center Hotel', 2400.00, 1200.00, 1200.00, 'UPI / Cash', 'Partial', 'Mark Completed'),
-('j0000002-0000-0000-0000-000000000002', '00000000-0000-0000-0000-000000000001', 'c0000003-0000-0000-0000-000000000003', NULL, 'Vikramaditya Rao', '+91 98222 11223', 'Full Day Executive SUV Rental', 'Tomorrow, 9:00 AM', 'Scheduled', 'Unassigned', 'Innova Crysta MH-31 BC 8821', 'IT Park HQ', 'Industrial Zone B', 6500.00, 6500.00, 0.00, 'Corporate Billing', 'Paid', 'Dispatch Vehicle')
+('j0000002-0000-0000-0000-000000000002', '00000000-0000-0000-0000-000000000001', 'JOB-903', 'c0000003-0000-0000-0000-000000000003', NULL, 'Vikramaditya Rao', '+91 98222 11223', 'Full Day Executive SUV Rental', 'Tomorrow, 9:00 AM', 'Scheduled', 'Unassigned', 'Innova Crysta MH-31 BC 8821', 'IT Park HQ', 'Industrial Zone B', 6500.00, 6500.00, 0.00, 'Corporate Billing', 'Paid', 'Dispatch Vehicle')
 ON CONFLICT (id) DO NOTHING;
 
 -- 5. Insert Seed Payments
