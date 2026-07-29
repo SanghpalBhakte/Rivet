@@ -828,3 +828,22 @@ export const INITIAL_TASKS: TaskRecord[] = [
     linkedEntityName: 'Priya Mehta',
   }
 ];
+
+export function createQuoteFollowUpTask(lead: Lead): TaskRecord {
+  const newTask: TaskRecord = {
+    id: `tsk-${Date.now()}`,
+    title: `Send quote for ${lead.serviceTitle}`,
+    type: 'Quote Follow-up',
+    status: 'Due Soon',
+    priority: 'High',
+    dueDateTime: lead.nextFollowUp || 'Today, 6:00 PM',
+    assignee: lead.assignee || 'Janai Desk',
+    linkedEntityId: lead.id,
+    linkedEntityType: 'Lead',
+    linkedEntityName: `${lead.customerName} (${lead.serviceTitle})`,
+    notes: `Auto-generated task from ${lead.source} Intake Bridge. Contact: ${lead.customerPhone}`,
+  };
+
+  INITIAL_TASKS.unshift(newTask);
+  return newTask;
+}

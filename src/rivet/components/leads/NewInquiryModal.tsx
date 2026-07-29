@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Lead } from '../../types/rivet';
+import { createQuoteFollowUpTask } from '../../data/mockData';
 import { Button } from '../ui/Button';
 
 interface NewInquiryModalProps {
@@ -88,6 +89,9 @@ export const NewInquiryModal: React.FC<NewInquiryModalProps> = ({
         },
       ],
     };
+
+    // Auto-generate a "Quote Follow-up" task for Tasks & Reminders queue
+    createQuoteFollowUpTask(newLead);
 
     onAddLead(newLead);
     onClose();
@@ -240,6 +244,10 @@ export const NewInquiryModal: React.FC<NewInquiryModalProps> = ({
                 onChange={(e) => setNotes(e.target.value)}
                 style={{ width: '100%', resize: 'vertical' }}
               />
+            </div>
+
+            <div style={{ fontSize: '11px', color: 'var(--rv-status-callback-text)', background: 'var(--rv-status-callback-bg)', padding: '6px 10px', borderRadius: '4px', border: '1px solid var(--rv-status-callback-border)', marginTop: '8px' }}>
+              ⚡ Submitting automatically spawns a "Quote Follow-up" task in the Tasks & Reminders queue for Janai Desk.
             </div>
 
             <Button type="submit" variant="primary" size="md" style={{ marginTop: '8px' }}>
