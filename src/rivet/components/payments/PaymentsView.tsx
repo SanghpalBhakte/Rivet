@@ -37,67 +37,24 @@ export const PaymentsView: React.FC = () => {
     });
   }, [payments, statusFilter, searchQuery]);
 
-  // Record received payment handler
+  // Record received payment handler — persists to Supabase
   const handleRecordPayment = (
     paymentId: string,
     receivedAmount: number,
     method: string,
     noteText?: string
   ) => {
-    setPayments((prev) =>
-      prev.map((p) => {
-        if (p.id !== paymentId) return p;
-        const newPaid = p.amountPaid + receivedAmount;
-        const newBalance = Math.max(0, p.totalAmount - newPaid);
-        let newStatus: PaymentStatus = p.status;
-        if (newBalance === 0) newStatus = 'Paid';
-        else if (newPaid > 0) newStatus = 'Partial';
-
-        const newNote = {
-          id: `pn-${Date.now()}`,
-          author: 'Janai Desk',
-          timestamp: 'Just now',
-          text: noteText || `Recorded ₹${receivedAmount.toLocaleString('en-IN')} payment via ${method}`,
-        };
-
-        return {
-          ...p,
-          amountPaid: newPaid,
-          balanceDue: newBalance,
-          paymentMethod: method,
-          status: newStatus,
-          notes: [newNote, ...p.notes],
-        };
+    ApiService.recordPaymentCollection(paymentId, receivedAmount, method, noteText)
+      .then((updated) => {
+        setPayments(updated);
+        if (selectedPayment?.id === paymentId) {
+          const refreshed = updated.find((p) => p.id === paymentId) || null;
+          setSelectedPayment(refreshed);
+        }
       })
-    );
-
-    if (selectedPayment && selectedPayment.id === paymentId) {
-      setSelectedPayment((prev) => {
-        if (!prev) return null;
-        const newPaid = prev.amountPaid + receivedAmount;
-        const newBalance = Math.max(0, prev.totalAmount - newPaid);
-        let newStatus: PaymentStatus = prev.status;
-        if (newBalance === 0) newStatus = 'Paid';
-        else if (newPaid > 0) newStatus = 'Partial';
-
-        const newNote = {
-          id: `pn-${Date.now()}`,
-          author: 'Janai Desk',
-          timestamp: 'Just now',
-          text: noteText || `Recorded ₹${receivedAmount.toLocaleString('en-IN')} payment via ${method}`,
-        };
-
-        return {
-          ...prev,
-          amountPaid: newPaid,
-          balanceDue: newBalance,
-          paymentMethod: method,
-          status: newStatus,
-          notes: [newNote, ...prev.notes],
-        };
-      });
-    }
+      .catch(console.error);
   };
+
 
   // Mark fully paid handler
   const handleMarkFullyPaid = (paymentId: string) => {

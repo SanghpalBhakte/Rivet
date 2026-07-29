@@ -88,9 +88,9 @@ export const TasksView: React.FC = () => {
   }, [filteredTasks]);
 
   const handleStatusChange = (task: TaskRecord, newStatus: TaskStatus) => {
-    setTasks((prev) =>
-      prev.map((t) => (t.id === task.id ? { ...t, status: newStatus } : t))
-    );
+    ApiService.updateTaskStatus(task.id, newStatus)
+      .then(setTasks)
+      .catch(console.error);
     showToast(`Marked task "${task.title}" as ${newStatus}`);
   };
 
@@ -98,24 +98,23 @@ export const TasksView: React.FC = () => {
     e.preventDefault();
     if (!newTitle.trim()) return;
 
-    const newTaskRecord: TaskRecord = {
-      id: `tsk-${Date.now()}`,
+    ApiService.createTask({
       title: newTitle.trim(),
       type: newType,
-      status: 'Open',
       priority: newPriority,
       dueDateTime: newDue,
       assignee: newAssignee,
       linkedEntityName: newLinkedEntity || undefined,
       linkedEntityType: newLinkedEntity ? 'Lead' : undefined,
       notes: newNotes.trim() || undefined,
-    };
+    })
+      .then(setTasks)
+      .catch(console.error);
 
-    setTasks((prev) => [newTaskRecord, ...prev]);
     setNewTitle('');
     setNewNotes('');
     setShowCreateModal(false);
-    showToast(`Created task "${newTaskRecord.title}"`);
+    showToast(`Task "${newTitle.trim()}" created`);
   };
 
   const getStatusCount = (st: 'All' | TaskStatus) => {

@@ -5,7 +5,6 @@ import {
   Job,
   PaymentRecord,
   TaskRecord,
-  ActivityItem,
   LeadNote,
   JobNote,
   PaymentNote,
@@ -13,10 +12,21 @@ import {
   LeadStage,
   PaymentStatus,
   TaskStatus,
+  TaskType,
+  TaskPriority,
 } from '../types/rivet';
 
-// Default initial data for persistent local cache
-const INITIAL_CUSTOMERS: CustomerRecord[] = [
+/* ============================================================================
+   SEED WORKSPACE — matches seed.sql
+   ============================================================================ */
+const DEV_WORKSPACE_ID = '00000000-0000-0000-0000-000000000001';
+
+/* ============================================================================
+   LOCAL FALLBACK DATA — exact UUIDs match seed.sql, used only when Supabase
+   returns 0 rows (e.g. first run before seed, or offline).
+   localStorage is NO LONGER the write target for any operation.
+   ============================================================================ */
+const FALLBACK_CUSTOMERS: CustomerRecord[] = [
   {
     id: 'c0000000-0000-0000-0000-000000000001',
     customerCode: 'CUST-101',
@@ -32,8 +42,6 @@ const INITIAL_CUSTOMERS: CustomerRecord[] = [
     nextFollowUp: 'Today, 4:00 PM',
     history: [
       { id: 'h1', date: '2026-07-29', type: 'job', title: 'Airport Express Pickup — Ertiga', details: 'Assigned Ramesh K. • Status: In Progress', badgeLabel: 'JOB-901' },
-      { id: 'h2', date: '2026-07-29', type: 'payment', title: 'Advance Paid: ₹1,200 (Balance Due: ₹1,200)', details: 'Mode: UPI • Invoice PAY-401', badgeLabel: 'PARTIAL' },
-      { id: 'h3', date: '2026-07-28', type: 'lead', title: 'Inquiry Created via WhatsApp', details: 'Requested 6-seater sedan transfer', badgeLabel: 'NEW' },
     ],
     primaryActionLabel: 'Log Internal Note',
   },
@@ -50,14 +58,12 @@ const INITIAL_CUSTOMERS: CustomerRecord[] = [
     totalSpent: 8500,
     outstandingBalance: 0,
     nextFollowUp: 'Tomorrow, 11:30 AM',
-    history: [
-      { id: 'h4', date: '2026-07-29', type: 'lead', title: 'Quote Sent: ₹8,500', details: 'Corporate sedan fleet rental', badgeLabel: 'QUOTE SENT' },
-    ],
+    history: [],
     primaryActionLabel: 'Schedule Follow-up',
   },
 ];
 
-const INITIAL_LEADS: Lead[] = [
+const FALLBACK_LEADS: Lead[] = [
   {
     id: '1ead0000-0000-0000-0000-000000000001',
     customerName: 'Priya Patel',
@@ -94,9 +100,9 @@ const INITIAL_LEADS: Lead[] = [
   },
 ];
 
-const INITIAL_JOBS: Job[] = [
+const FALLBACK_JOBS: Job[] = [
   {
-    id: 'j0000001-0000-0000-0000-000000000001',
+    id: 'db000000-0000-0000-0000-000000000001',
     jobCode: 'JOB-901',
     customerName: 'Rajesh Sharma',
     customerPhone: '+91 98220 12345',
@@ -113,7 +119,7 @@ const INITIAL_JOBS: Job[] = [
   },
 ];
 
-const INITIAL_TASKS: TaskRecord[] = [
+const FALLBACK_TASKS: TaskRecord[] = [
   {
     id: 'da000000-0000-0000-0000-000000000001',
     title: 'Confirm balance payment of ₹1,200 with Rajesh Sharma',
@@ -142,7 +148,7 @@ const INITIAL_TASKS: TaskRecord[] = [
   },
 ];
 
-const INITIAL_PAYMENTS: PaymentRecord[] = [
+const FALLBACK_PAYMENTS: PaymentRecord[] = [
   {
     id: 'fa000000-0000-0000-0000-000000000001',
     paymentCode: 'PAY-401',
@@ -161,230 +167,450 @@ const INITIAL_PAYMENTS: PaymentRecord[] = [
   },
 ];
 
-// Helper to get or set local persistent cache
-const getLocalCache = <T>(key: string, fallback: T): T => {
-  const item = localStorage.getItem(`rv_crm_${key}`);
-  if (!item) {
-    localStorage.setItem(`rv_crm_${key}`, JSON.stringify(fallback));
-    return fallback;
-  }
-  return JSON.parse(item);
-};
+/* ============================================================================
+   MAPPERS — DB row → typed app model
+   ============================================================================ */
+const mapCustomer = (c: Record<string, unknown>): CustomerRecord => ({
+  id: c.id as string,
+  customerCode: c.customer_code as string,
+  name: c.name as string,
+  phone: c.phone as string,
+  email: (c.email as string) || '',
+  city: (c.city as string) || 'Central HQ',
+  healthStatus: c.health_status as CustomerRecord['healthStatus'],
+  latestServiceRef: (c.latest_service_ref as string) || 'N/A',
+  lastActivityDate: c.last_activity_date
+    ? new Date(c.last_activity_date as string).toISOString().split('T')[0]
+    : 'Today',
+  totalSpent: Number(c.total_spent) || 0,
+  outstandingBalance: Number(c.outstanding_balance) || 0,
+  nextFollowUp: (c.next_follow_up as string) || 'Not scheduled',
+  history: [],
+  primaryActionLabel: (c.primary_action_label as string) || 'Open Customer Hub',
+});
 
-const setLocalCache = <T>(key: string, value: T) => {
-  localStorage.setItem(`rv_crm_${key}`, JSON.stringify(value));
-};
+const mapLead = (l: Record<string, unknown>): Lead => ({
+  id: l.id as string,
+  customerName: l.customer_name as string,
+  customerPhone: l.customer_phone as string,
+  customerEmail: (l.customer_email as string) || '',
+  serviceTitle: l.service_title as string,
+  source: l.source as Lead['source'],
+  stage: l.stage as LeadStage,
+  budget: (l.budget as string) || '₹0',
+  quoteAmount: (l.quote_amount as string) || '₹0',
+  quoteStatus: (l.quote_status as string) || 'Draft',
+  nextFollowUp: (l.next_follow_up as string) || 'Not set',
+  assignee: (l.assignee as string) || 'Ops Desk',
+  notes: [],
+  createdAt: l.created_at
+    ? new Date(l.created_at as string).toLocaleDateString()
+    : 'Today',
+  primaryActionLabel: (l.primary_action_label as string) || 'Follow-up Callback',
+});
+
+const mapJob = (j: Record<string, unknown>): Job => ({
+  id: j.id as string,
+  jobCode: j.job_code as string,
+  customerName: j.customer_name as string,
+  customerPhone: j.customer_phone as string,
+  serviceTitle: j.service_title as string,
+  scheduledDateTime: j.scheduled_date_time as string,
+  status: j.status as JobStatus,
+  driverName: (j.driver_name as string) || 'Unassigned',
+  vehicleDetails: (j.vehicle_details as string) || 'TBD',
+  pickupLocation: j.pickup_location as string,
+  dropLocation: j.drop_location as string,
+  payment: {
+    totalAmount: `₹${j.total_amount}`,
+    advancePaid: `₹${j.advance_paid}`,
+    dueAmount: `₹${j.due_amount}`,
+    paymentMethod: (j.payment_method as string) || 'UPI',
+    status: ((j.payment_status as string) || 'Pending') as 'Pending' | 'Partial' | 'Paid',
+  },
+  notes: [],
+  primaryActionLabel: (j.primary_action_label as string) || 'Dispatch Vehicle',
+});
+
+const mapTask = (t: Record<string, unknown>): TaskRecord => ({
+  id: t.id as string,
+  title: t.title as string,
+  type: t.type as TaskType,
+  status: t.status as TaskStatus,
+  priority: t.priority as TaskRecord['priority'],
+  dueDateTime: t.due_date_time as string,
+  assignee: (t.assignee as string) || 'Ops Desk',
+  linkedEntityId: t.linked_entity_id as string | undefined,
+  linkedEntityType: t.linked_entity_type as TaskRecord['linkedEntityType'],
+  linkedEntityName: t.linked_entity_name as string | undefined,
+  notes: (t.notes as string) || '',
+});
+
+const mapPayment = (p: Record<string, unknown>): PaymentRecord => ({
+  id: p.id as string,
+  paymentCode: p.payment_code as string,
+  customerName: p.customer_name as string,
+  customerPhone: p.customer_phone as string,
+  jobCode: p.job_code as string,
+  serviceTitle: p.service_title as string,
+  totalAmount: Number(p.total_amount),
+  amountPaid: Number(p.amount_paid),
+  balanceDue: Number(p.balance_due),
+  dueDate: p.due_date as string,
+  paymentMethod: (p.payment_method as string) || 'UPI',
+  status: p.status as PaymentStatus,
+  notes: [],
+  primaryActionLabel: (p.primary_action_label as string) || 'Send Payment Link',
+});
+
+const mapNote = (n: Record<string, unknown>): LeadNote => ({
+  id: n.id as string,
+  author: (n.author_name as string) || 'Ops Staff',
+  timestamp: n.created_at
+    ? new Date(n.created_at as string).toLocaleString()
+    : 'Just now',
+  text: n.text as string,
+});
 
 /* ============================================================================
-   RIVET CRM API SERVICE (Persistent Supabase / Multi-Tenant Data Layer)
+   RIVET CRM API SERVICE
+   Write path: always Supabase when configured, throws on error (no silent fallback).
+   Read path: Supabase with local seed fallback when 0 rows returned.
    ============================================================================ */
-
 export const ApiService = {
-  // 1. CUSTOMERS API
+
+  /* ── CUSTOMERS ─────────────────────────────────────────────────────────── */
+
   async getCustomers(): Promise<CustomerRecord[]> {
     if (isSupabaseConfigured) {
-      const { data, error } = await supabase.from('customers').select('*');
-      if (!error && data && data.length > 0) {
-        return data.map((c) => ({
-          id: c.id,
-          customerCode: c.customer_code,
-          name: c.name,
-          phone: c.phone,
-          email: c.email || '',
-          city: c.city || 'Central HQ',
-          healthStatus: c.health_status,
-          latestServiceRef: c.latest_service_ref || 'N/A',
-          lastActivityDate: c.last_activity_date ? new Date(c.last_activity_date).toISOString().split('T')[0] : 'Today',
-          totalSpent: Number(c.total_spent) || 0,
-          outstandingBalance: Number(c.outstanding_balance) || 0,
-          nextFollowUp: c.next_follow_up || 'Not scheduled',
-          history: [],
-          primaryActionLabel: c.primary_action_label || 'Open Customer Hub',
-        }));
-      }
+      const { data, error } = await supabase.from('customers').select('*').order('created_at', { ascending: false });
+      if (error) console.error('[Rivet] getCustomers:', error.message);
+      if (data && data.length > 0) return (data as Record<string, unknown>[]).map(mapCustomer);
     }
-    return getLocalCache('customers', INITIAL_CUSTOMERS);
+    return FALLBACK_CUSTOMERS;
   },
 
   async updateCustomer(id: string, updates: Partial<CustomerRecord>): Promise<CustomerRecord[]> {
     if (isSupabaseConfigured) {
-      await supabase.from('customers').update({
+      const { error } = await supabase.from('customers').update({
         name: updates.name,
         phone: updates.phone,
         email: updates.email,
         city: updates.city,
         health_status: updates.healthStatus,
         next_follow_up: updates.nextFollowUp,
+        updated_at: new Date().toISOString(),
       }).eq('id', id);
+      if (error) throw new Error(`[Rivet] updateCustomer: ${error.message}`);
+      return this.getCustomers();
     }
-    const current = getLocalCache('customers', INITIAL_CUSTOMERS);
-    const updated = current.map((c) => (c.id === id ? { ...c, ...updates } : c));
-    setLocalCache('customers', updated);
-    return updated;
+    return FALLBACK_CUSTOMERS.map((c) => (c.id === id ? { ...c, ...updates } : c));
   },
 
-  // 2. LEADS API
+  /* ── LEADS ─────────────────────────────────────────────────────────────── */
+
   async getLeads(): Promise<Lead[]> {
     if (isSupabaseConfigured) {
-      const { data, error } = await supabase.from('leads').select('*');
-      if (!error && data && data.length > 0) {
-        return data.map((l) => ({
-          id: l.id,
-          customerName: l.customer_name,
-          customerPhone: l.customer_phone,
-          customerEmail: l.customer_email || '',
-          serviceTitle: l.service_title,
-          source: l.source,
-          stage: l.stage as LeadStage,
-          budget: l.budget || '₹0',
-          quoteAmount: l.quote_amount || '₹0',
-          quoteStatus: l.quote_status || 'Draft',
-          nextFollowUp: l.next_follow_up || 'Not set',
-          assignee: l.assignee || 'Ops Desk',
-          notes: [],
-          createdAt: l.created_at ? new Date(l.created_at).toLocaleDateString() : 'Today',
-          primaryActionLabel: l.primary_action_label || 'Follow-up Callback',
-        }));
+      const { data, error } = await supabase.from('leads').select('*').order('created_at', { ascending: false });
+      if (error) console.error('[Rivet] getLeads:', error.message);
+      if (data && data.length > 0) {
+        const leads = (data as Record<string, unknown>[]).map(mapLead);
+        // Load notes for each lead
+        for (const lead of leads) {
+          const { data: notes } = await supabase
+            .from('notes')
+            .select('*')
+            .eq('linked_entity_id', lead.id)
+            .order('created_at', { ascending: false });
+          if (notes && notes.length > 0) {
+            lead.notes = (notes as Record<string, unknown>[]).map(mapNote);
+          }
+        }
+        return leads;
       }
     }
-    return getLocalCache('leads', INITIAL_LEADS);
+    return FALLBACK_LEADS;
+  },
+
+  async createLead(
+    lead: Omit<Lead, 'id' | 'notes' | 'createdAt'>,
+    workspaceId: string = DEV_WORKSPACE_ID
+  ): Promise<Lead[]> {
+    if (isSupabaseConfigured) {
+      const { error } = await supabase.from('leads').insert({
+        workspace_id: workspaceId,
+        customer_name: lead.customerName,
+        customer_phone: lead.customerPhone,
+        customer_email: lead.customerEmail || null,
+        service_title: lead.serviceTitle,
+        source: lead.source,
+        stage: lead.stage,
+        budget: lead.budget || '₹0',
+        quote_amount: lead.quoteAmount || '₹0',
+        quote_status: lead.quoteStatus || 'Not Sent',
+        next_follow_up: lead.nextFollowUp || null,
+        assignee: lead.assignee || 'Janai Desk',
+        primary_action_label: lead.primaryActionLabel || 'Mark Contacted',
+      });
+      if (error) throw new Error(`[Rivet] createLead: ${error.message}`);
+      return this.getLeads();
+    }
+    // Offline fallback: return merged list
+    const newLead: Lead = {
+      ...lead,
+      id: `ld-${Date.now()}`,
+      notes: [],
+      createdAt: new Date().toISOString().split('T')[0],
+    };
+    return [newLead, ...FALLBACK_LEADS];
   },
 
   async updateLeadStage(id: string, stage: LeadStage): Promise<Lead[]> {
     if (isSupabaseConfigured) {
-      await supabase.from('leads').update({ stage }).eq('id', id);
+      const label =
+        stage === 'New' ? 'Mark Contacted'
+        : stage === 'Contacted' ? 'Send Quote'
+        : stage === 'Quote Sent' ? 'Mark Confirmed'
+        : stage === 'Confirmed' ? 'Close & Archive'
+        : 'Reopen Lead';
+
+      const { error } = await supabase.from('leads').update({
+        stage,
+        primary_action_label: label,
+        updated_at: new Date().toISOString(),
+      }).eq('id', id);
+      if (error) throw new Error(`[Rivet] updateLeadStage: ${error.message}`);
+      return this.getLeads();
     }
-    const current = getLocalCache('leads', INITIAL_LEADS);
-    const updated = current.map((l) => (l.id === id ? { ...l, stage } : l));
-    setLocalCache('leads', updated);
-    return updated;
+    return FALLBACK_LEADS.map((l) => (l.id === id ? { ...l, stage } : l));
   },
 
-  // 3. JOBS API
+  async updateLeadDetails(id: string, updates: { quoteAmount?: string; quoteStatus?: string; nextFollowUp?: string }): Promise<Lead[]> {
+    if (isSupabaseConfigured) {
+      const { error } = await supabase.from('leads').update({
+        ...(updates.quoteAmount && { quote_amount: updates.quoteAmount }),
+        ...(updates.quoteStatus && { quote_status: updates.quoteStatus }),
+        ...(updates.nextFollowUp && { next_follow_up: updates.nextFollowUp }),
+        updated_at: new Date().toISOString(),
+      }).eq('id', id);
+      if (error) throw new Error(`[Rivet] updateLeadDetails: ${error.message}`);
+      return this.getLeads();
+    }
+    return FALLBACK_LEADS.map((l) => (l.id === id ? { ...l, ...updates } : l));
+  },
+
+  /* ── JOBS ──────────────────────────────────────────────────────────────── */
+
   async getJobs(): Promise<Job[]> {
     if (isSupabaseConfigured) {
-      const { data, error } = await supabase.from('jobs').select('*');
-      if (!error && data && data.length > 0) {
-        return data.map((j) => ({
-          id: j.id,
-          jobCode: j.job_code,
-          customerName: j.customer_name,
-          customerPhone: j.customer_phone,
-          serviceTitle: j.service_title,
-          scheduledDateTime: j.scheduled_date_time,
-          status: j.status as JobStatus,
-          driverName: j.driver_name || 'Unassigned',
-          vehicleDetails: j.vehicle_details || 'TBD',
-          pickupLocation: j.pickup_location,
-          dropLocation: j.drop_location,
-          payment: {
-            totalAmount: `₹${j.total_amount}`,
-            advancePaid: `₹${j.advance_paid}`,
-            dueAmount: `₹${j.due_amount}`,
-            paymentMethod: j.payment_method || 'UPI',
-            status: j.payment_status || 'Pending',
-          },
-          notes: [],
-          primaryActionLabel: j.primary_action_label || 'Dispatch Vehicle',
-        }));
+      const { data, error } = await supabase.from('jobs').select('*').order('created_at', { ascending: false });
+      if (error) console.error('[Rivet] getJobs:', error.message);
+      if (data && data.length > 0) {
+        const jobs = (data as Record<string, unknown>[]).map(mapJob);
+        for (const job of jobs) {
+          const { data: notes } = await supabase
+            .from('notes')
+            .select('*')
+            .eq('linked_entity_id', job.id)
+            .order('created_at', { ascending: false });
+          if (notes && notes.length > 0) {
+            job.notes = (notes as Record<string, unknown>[]).map(n => ({
+              id: n.id as string,
+              author: (n.author_name as string) || 'Ops Staff',
+              timestamp: new Date(n.created_at as string).toLocaleString(),
+              text: n.text as string,
+            })) as JobNote[];
+          }
+        }
+        return jobs;
       }
     }
-    return getLocalCache('jobs', INITIAL_JOBS);
+    return FALLBACK_JOBS;
   },
 
   async updateJobStatus(id: string, status: JobStatus): Promise<Job[]> {
     if (isSupabaseConfigured) {
-      await supabase.from('jobs').update({ status }).eq('id', id);
+      const { error } = await supabase.from('jobs').update({
+        status,
+        updated_at: new Date().toISOString(),
+      }).eq('id', id);
+      if (error) throw new Error(`[Rivet] updateJobStatus: ${error.message}`);
+      return this.getJobs();
     }
-    const current = getLocalCache('jobs', INITIAL_JOBS);
-    const updated = current.map((j) => (j.id === id ? { ...j, status } : j));
-    setLocalCache('jobs', updated);
-    return updated;
+    return FALLBACK_JOBS.map((j) => (j.id === id ? { ...j, status } : j));
   },
 
-  // 4. TASKS API
+  /* ── TASKS ─────────────────────────────────────────────────────────────── */
+
   async getTasks(): Promise<TaskRecord[]> {
     if (isSupabaseConfigured) {
-      const { data, error } = await supabase.from('tasks').select('*');
-      if (!error && data && data.length > 0) {
-        return data.map((t) => ({
-          id: t.id,
-          title: t.title,
-          type: t.type,
-          status: t.status as TaskStatus,
-          priority: t.priority,
-          dueDateTime: t.due_date_time,
-          assignee: t.assignee || 'Ops Desk',
-          linkedEntityId: t.linked_entity_id,
-          linkedEntityType: t.linked_entity_type,
-          linkedEntityName: t.linked_entity_name,
-          notes: t.notes || '',
-        }));
-      }
+      const { data, error } = await supabase.from('tasks').select('*').order('created_at', { ascending: false });
+      if (error) console.error('[Rivet] getTasks:', error.message);
+      if (data && data.length > 0) return (data as Record<string, unknown>[]).map(mapTask);
     }
-    return getLocalCache('tasks', INITIAL_TASKS);
+    return FALLBACK_TASKS;
+  },
+
+  async createTask(
+    task: {
+      title: string;
+      type: TaskType;
+      priority: TaskPriority;
+      dueDateTime: string;
+      assignee: string;
+      linkedEntityId?: string;
+      linkedEntityType?: TaskRecord['linkedEntityType'];
+      linkedEntityName?: string;
+      notes?: string;
+    },
+    workspaceId: string = DEV_WORKSPACE_ID
+  ): Promise<TaskRecord[]> {
+    if (isSupabaseConfigured) {
+      const { error } = await supabase.from('tasks').insert({
+        workspace_id: workspaceId,
+        title: task.title,
+        type: task.type,
+        status: 'Open',
+        priority: task.priority,
+        due_date_time: task.dueDateTime,
+        assignee: task.assignee,
+        linked_entity_id: task.linkedEntityId || null,
+        linked_entity_type: task.linkedEntityType || null,
+        linked_entity_name: task.linkedEntityName || null,
+        notes: task.notes || null,
+      });
+      if (error) throw new Error(`[Rivet] createTask: ${error.message}`);
+      return this.getTasks();
+    }
+    const newTask: TaskRecord = {
+      id: `tsk-${Date.now()}`,
+      status: 'Open',
+      ...task,
+    };
+    return [newTask, ...FALLBACK_TASKS];
   },
 
   async updateTaskStatus(id: string, status: TaskStatus): Promise<TaskRecord[]> {
     if (isSupabaseConfigured) {
-      await supabase.from('tasks').update({ status }).eq('id', id);
+      const { error } = await supabase.from('tasks').update({
+        status,
+        updated_at: new Date().toISOString(),
+      }).eq('id', id);
+      if (error) throw new Error(`[Rivet] updateTaskStatus: ${error.message}`);
+      return this.getTasks();
     }
-    const current = getLocalCache('tasks', INITIAL_TASKS);
-    const updated = current.map((t) => (t.id === id ? { ...t, status } : t));
-    setLocalCache('tasks', updated);
-    return updated;
+    return FALLBACK_TASKS.map((t) => (t.id === id ? { ...t, status } : t));
   },
 
-  // 5. PAYMENTS API
+  /* ── PAYMENTS ──────────────────────────────────────────────────────────── */
+
   async getPayments(): Promise<PaymentRecord[]> {
     if (isSupabaseConfigured) {
-      const { data, error } = await supabase.from('payments').select('*');
-      if (!error && data && data.length > 0) {
-        return data.map((p) => ({
-          id: p.id,
-          paymentCode: p.payment_code,
-          customerName: p.customer_name,
-          customerPhone: p.customer_phone,
-          jobCode: p.job_code,
-          serviceTitle: p.service_title,
-          totalAmount: Number(p.total_amount),
-          amountPaid: Number(p.amount_paid),
-          balanceDue: Number(p.balance_due),
-          dueDate: p.due_date,
-          paymentMethod: p.payment_method || 'UPI',
-          status: p.status as PaymentStatus,
-          notes: [],
-          primaryActionLabel: p.primary_action_label || 'Send Payment Link',
-        }));
+      const { data, error } = await supabase.from('payments').select('*').order('created_at', { ascending: false });
+      if (error) console.error('[Rivet] getPayments:', error.message);
+      if (data && data.length > 0) {
+        const payments = (data as Record<string, unknown>[]).map(mapPayment);
+        for (const payment of payments) {
+          const { data: notes } = await supabase
+            .from('notes')
+            .select('*')
+            .eq('linked_entity_id', payment.id)
+            .order('created_at', { ascending: false });
+          if (notes && notes.length > 0) {
+            payment.notes = (notes as Record<string, unknown>[]).map(n => ({
+              id: n.id as string,
+              author: (n.author_name as string) || 'Ops Staff',
+              timestamp: new Date(n.created_at as string).toLocaleString(),
+              text: n.text as string,
+            })) as PaymentNote[];
+          }
+        }
+        return payments;
       }
     }
-    return getLocalCache('payments', INITIAL_PAYMENTS);
+    return FALLBACK_PAYMENTS;
   },
 
-  async recordPaymentCollection(id: string, amount: number): Promise<PaymentRecord[]> {
-    const current = getLocalCache('payments', INITIAL_PAYMENTS);
-    const updated = current.map((p) => {
+  async recordPaymentCollection(
+    id: string,
+    amount: number,
+    method: string,
+    noteText?: string,
+    authorId?: string,
+    authorName?: string,
+    workspaceId: string = DEV_WORKSPACE_ID
+  ): Promise<PaymentRecord[]> {
+    if (isSupabaseConfigured) {
+      // Fetch current payment to compute new totals
+      const { data: current, error: fetchErr } = await supabase
+        .from('payments')
+        .select('amount_paid, total_amount, balance_due')
+        .eq('id', id)
+        .single();
+      if (fetchErr || !current) throw new Error(`[Rivet] recordPaymentCollection fetch: ${fetchErr?.message}`);
+
+      const newPaid = Number(current.amount_paid) + amount;
+      const newDue = Math.max(0, Number(current.total_amount) - newPaid);
+      const newStatus: PaymentStatus = newDue === 0 ? 'Paid' : 'Partial';
+
+      const { error: updateErr } = await supabase.from('payments').update({
+        amount_paid: newPaid,
+        balance_due: newDue,
+        status: newStatus,
+        payment_method: method,
+        updated_at: new Date().toISOString(),
+      }).eq('id', id);
+      if (updateErr) throw new Error(`[Rivet] recordPaymentCollection update: ${updateErr.message}`);
+
+      // Persist note
+      await supabase.from('notes').insert({
+        workspace_id: workspaceId,
+        linked_entity_id: id,
+        linked_entity_type: 'Payment',
+        author_id: authorId || null,
+        author_name: authorName || 'Janai Desk',
+        text: noteText || `Recorded ₹${amount.toLocaleString('en-IN')} payment via ${method}`,
+      });
+
+      return this.getPayments();
+    }
+
+    // Offline fallback
+    return FALLBACK_PAYMENTS.map((p) => {
       if (p.id !== id) return p;
       const newPaid = p.amountPaid + amount;
       const newDue = Math.max(0, p.totalAmount - newPaid);
-      const newStatus: PaymentStatus = newDue === 0 ? 'Paid' : 'Partial';
-      
-      if (isSupabaseConfigured) {
-        supabase.from('payments').update({
-          amount_paid: newPaid,
-          balance_due: newDue,
-          status: newStatus,
-        }).eq('id', id);
-      }
-
-      return {
-        ...p,
-        amountPaid: newPaid,
-        balanceDue: newDue,
-        status: newStatus,
-      };
+      return { ...p, amountPaid: newPaid, balanceDue: newDue, paymentMethod: method, status: newDue === 0 ? 'Paid' : 'Partial' };
     });
-    setLocalCache('payments', updated);
-    return updated;
+  },
+
+  /* ── NOTES ─────────────────────────────────────────────────────────────── */
+
+  async addNote(
+    entityId: string,
+    entityType: 'Lead' | 'Job' | 'Payment' | 'Customer',
+    text: string,
+    authorId?: string,
+    authorName?: string,
+    workspaceId: string = DEV_WORKSPACE_ID
+  ): Promise<{ id: string; author: string; timestamp: string; text: string }> {
+    if (isSupabaseConfigured) {
+      const { data, error } = await supabase.from('notes').insert({
+        workspace_id: workspaceId,
+        linked_entity_id: entityId,
+        linked_entity_type: entityType,
+        author_id: authorId || null,
+        author_name: authorName || 'Janai Desk',
+        text,
+      }).select().single();
+      if (error) throw new Error(`[Rivet] addNote: ${error.message}`);
+      return mapNote(data as Record<string, unknown>);
+    }
+    return {
+      id: `n-${Date.now()}`,
+      author: authorName || 'Janai Desk',
+      timestamp: 'Just now',
+      text,
+    };
   },
 };

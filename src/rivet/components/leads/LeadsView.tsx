@@ -25,87 +25,69 @@ export const LeadsView: React.FC = () => {
 
   // Stage transition workflow handler
   const handleStageChange = (leadId: string, newStage: LeadStage) => {
-    ApiService.updateLeadStage(leadId, newStage).then(setLeads);
+    ApiService.updateLeadStage(leadId, newStage).then(setLeads).catch(console.error);
   };
 
   // Follow-up date/time schedule handler
   const handleScheduleFollowUp = (leadId: string, nextTime: string) => {
-    setLeads((prevLeads) =>
-      prevLeads.map((l) => {
-        if (l.id !== leadId) return l;
-        const updated = { ...l, nextFollowUp: nextTime };
-        if (selectedLead && selectedLead.id === leadId) {
-          setSelectedLead(updated);
-        }
-        return updated;
+    ApiService.updateLeadDetails(leadId, { nextFollowUp: nextTime })
+      .then((updated) => {
+        setLeads(updated);
+        const found = updated.find((l) => l.id === leadId) || null;
+        if (selectedLead?.id === leadId) setSelectedLead(found);
       })
-    );
+      .catch(console.error);
   };
 
   // Quote amount update handler
   const handleUpdateQuote = (leadId: string, amount: string, status: string) => {
-    setLeads((prevLeads) =>
-      prevLeads.map((l) => {
-        if (l.id !== leadId) return l;
-        const updated = {
-          ...l,
-          quoteAmount: amount,
-          quoteStatus: status || `Quote ${amount} Prepared`,
-        };
-        if (selectedLead && selectedLead.id === leadId) {
-          setSelectedLead(updated);
-        }
-        return updated;
+    ApiService.updateLeadDetails(leadId, { quoteAmount: amount, quoteStatus: status || `Quote ${amount} Prepared` })
+      .then((updated) => {
+        setLeads(updated);
+        const found = updated.find((l) => l.id === leadId) || null;
+        if (selectedLead?.id === leadId) setSelectedLead(found);
       })
-    );
+      .catch(console.error);
   };
 
   // Add Note handler
   const handleAddNote = (leadId: string, text: string) => {
-    const newNote = {
-      id: `n-${Date.now()}`,
-      author: 'Janai Desk',
-      timestamp: 'Just now',
-      text: text,
-    };
-
-    setLeads((prevLeads) =>
-      prevLeads.map((l) => {
-        if (l.id !== leadId) return l;
-        const updated = {
-          ...l,
-          notes: [newNote, ...l.notes],
-        };
-        if (selectedLead && selectedLead.id === leadId) {
-          setSelectedLead(updated);
-        }
-        return updated;
+    ApiService.addNote(leadId, 'Lead', text)
+      .then((newNote) => {
+        setLeads((prev) =>
+          prev.map((l) => {
+            if (l.id !== leadId) return l;
+            const updated = { ...l, notes: [newNote, ...l.notes] };
+            if (selectedLead?.id === leadId) setSelectedLead(updated);
+            return updated;
+          })
+        );
       })
-    );
+      .catch(console.error);
   };
 
   // Quick Action click from list row
   const handleQuickAction = (lead: Lead, e: React.MouseEvent) => {
     e.stopPropagation();
-
-    // Perform default stage progression
-    if (lead.stage === 'New') {
-      handleStageChange(lead.id, 'Contacted');
-    } else if (lead.stage === 'Contacted') {
-      handleStageChange(lead.id, 'Quote Sent');
-    } else if (lead.stage === 'Quote Sent') {
-      handleStageChange(lead.id, 'Confirmed');
-    } else if (lead.stage === 'Confirmed') {
-      handleStageChange(lead.id, 'Closed');
-    } else {
-      setSelectedLead(lead);
-    }
+    if (lead.stage === 'New') handleStageChange(lead.id, 'Contacted');
+    else if (lead.stage === 'Contacted') handleStageChange(lead.id, 'Quote Sent');
+    else if (lead.stage === 'Quote Sent') handleStageChange(lead.id, 'Confirmed');
+    else if (lead.stage === 'Confirmed') handleStageChange(lead.id, 'Closed');
+    else setSelectedLead(lead);
   };
 
-  // Add new lead intake handler
+  // Add new lead intake handler — persists to Supabase
   const handleAddLead = (newLead: Lead) => {
-    setLeads((prev) => [newLead, ...prev]);
-    setSelectedLead(newLead);
+    ApiService.createLead(newLead)
+      .then((updated) => {
+        setLeads(updated);
+        // Select the first (newest) lead returned
+        const created = updated.find(
+          (l) => l.customerPhone === newLead.customerPhone && l.serviceTitle === newLead.serviceTitle
+        );
+        setSelectedLead(created || null);
+      })
+      .catch(console.error);
   };
 
   // Filter leads by search query and stage tab

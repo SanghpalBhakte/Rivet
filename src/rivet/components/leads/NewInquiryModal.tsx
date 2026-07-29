@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Lead } from '../../types/rivet';
-import { createQuoteFollowUpTask } from '../../data/mockData';
+import { ApiService } from '../../services/api';
 import { Button } from '../ui/Button';
 
 interface NewInquiryModalProps {
@@ -62,7 +62,7 @@ export const NewInquiryModal: React.FC<NewInquiryModalProps> = ({
     if (parsedNotes) setNotes(parsedNotes);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim() || !phone.trim()) return;
 
@@ -75,6 +75,7 @@ export const NewInquiryModal: React.FC<NewInquiryModalProps> = ({
       source: source,
       stage: 'New',
       budget: 'To Quote',
+      quoteAmount: 'To Quote',
       quoteStatus: 'Not Sent',
       nextFollowUp: 'Today, 6:00 PM',
       assignee: 'Janai Desk',
@@ -90,12 +91,21 @@ export const NewInquiryModal: React.FC<NewInquiryModalProps> = ({
       ],
     };
 
-    // Auto-generate a "Quote Follow-up" task for Tasks & Reminders queue
-    createQuoteFollowUpTask(newLead);
+    // Auto-generate a Quote Follow-up task in Supabase
+    ApiService.createTask({
+      title: `Send quote for ${newLead.serviceTitle}`,
+      type: 'Quote Follow-up',
+      priority: 'High',
+      dueDateTime: newLead.nextFollowUp || 'Today, 6:00 PM',
+      assignee: newLead.assignee || 'Janai Desk',
+      linkedEntityType: 'Lead',
+      linkedEntityName: `${newLead.customerName} (${newLead.serviceTitle})`,
+      notes: `Auto-generated from ${source} Intake Bridge. Contact: ${newLead.customerPhone}`,
+    }).catch(console.error);
 
+    // Parent will call ApiService.createLead
     onAddLead(newLead);
     onClose();
-    // Reset form
     setName('');
     setPhone('');
     setTravelDate('');
