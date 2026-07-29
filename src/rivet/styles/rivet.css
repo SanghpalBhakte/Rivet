@@ -5,29 +5,29 @@
    ========================================================================== */
 
 :root {
-  /* Surface & Base Palette (Deep Charcoal & Soft Graphite Layering) */
-  --rv-bg-base: #080a0d;
-  --rv-bg-surface: #0f1318;
-  --rv-bg-surface-elevated: #151921;
-  --rv-bg-surface-hover: #1b212b;
-  --rv-bg-input: #0b0e12;
+  /* Surface & Base Palette (Softened Graphite & Slate Layering) */
+  --rv-bg-base: #0b0e14;
+  --rv-bg-surface: #121620;
+  --rv-bg-surface-elevated: #181d2a;
+  --rv-bg-surface-hover: #1e2434;
+  --rv-bg-input: #0e111a;
   
   /* Borders & Dividers */
-  --rv-border-subtle: #19202a;
-  --rv-border-default: #232c3a;
-  --rv-border-strong: #313d4f;
+  --rv-border-subtle: #1c2332;
+  --rv-border-default: #262e42;
+  --rv-border-strong: #344058;
   --rv-border-focus: #2dd4bf;
 
   /* Shadows & Depth System */
-  --rv-shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.35);
-  --rv-shadow-md: 0 4px 16px rgba(0, 0, 0, 0.4);
-  --rv-shadow-lg: 0 8px 30px rgba(0, 0, 0, 0.5);
+  --rv-shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.25);
+  --rv-shadow-md: 0 4px 18px rgba(0, 0, 0, 0.32);
+  --rv-shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.42);
 
   /* Typography Colors */
   --rv-text-primary: #f8fafc;
   --rv-text-secondary: #94a3b8;
-  --rv-text-muted: #64748b;
-  --rv-text-dim: #475569;
+  --rv-text-muted: #718096;
+  --rv-text-dim: #4a5568;
 
   /* Operational Status Colors (Muted, Non-glowing, Low-glare Palette) */
   /* Overdue / Critical — Muted Amber Warmth */
@@ -131,9 +131,9 @@
 /* Dashboard Grid Layout */
 .rv-dashboard-grid {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 350px;
-  gap: var(--rv-space-5);
-  margin-bottom: var(--rv-space-4);
+  grid-template-columns: minmax(0, 1fr) 360px;
+  gap: var(--rv-space-6);
+  margin-bottom: var(--rv-space-5);
   align-items: start;
 }
 
