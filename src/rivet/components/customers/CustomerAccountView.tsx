@@ -1,16 +1,19 @@
 import React, { useState } from 'react';
-import { CustomerRecord, Lead, Job, PaymentRecord } from '../../types/rivet';
+import { CustomerRecord, Lead, Job, PaymentRecord, TaskRecord, TaskType, TaskPriority } from '../../types/rivet';
 import { getCustomerOperationalAccount } from '../../utils/customerMapper';
+import { INITIAL_TASKS } from '../../data/mockData';
 import { Badge } from '../ui/Badge';
 import { Button } from '../ui/Button';
 import { Card } from '../ui/Card';
 import { EmptyState } from '../ui/EmptyState';
+import { TaskItem } from '../ui/TaskItem';
 
 interface CustomerAccountViewProps {
   customer: CustomerRecord;
   allLeads: Lead[];
   allJobs: Job[];
   allPayments: PaymentRecord[];
+  allTasks?: TaskRecord[];
   onBack: () => void;
   onAddNote: (customerId: string, noteText: string) => void;
 }
@@ -20,15 +23,24 @@ export const CustomerAccountView: React.FC<CustomerAccountViewProps> = ({
   allLeads,
   allJobs,
   allPayments,
+  allTasks = INITIAL_TASKS,
   onBack,
   onAddNote,
 }) => {
+  const [tasksList, setTasksList] = useState<TaskRecord[]>(allTasks);
   const [noteInput, setNoteInput] = useState('');
+  const [showAddReminderForm, setShowAddReminderForm] = useState(false);
+
+  // New Reminder Form State
+  const [reminderTitle, setReminderTitle] = useState('');
+  const [reminderType, setReminderType] = useState<TaskType>('Callback');
+  const [reminderDue, setReminderDue] = useState('Tomorrow, 10:00 AM');
+  const [reminderPriority, setReminderPriority] = useState<TaskPriority>('Normal');
   const [actionSuccessMsg, setActionSuccessMsg] = useState<string | null>(null);
 
   // Retrieve dynamically aggregated operational account data
-  const account = getCustomerOperationalAccount(customer, allLeads, allJobs, allPayments);
-  const { counters, nextAction, linkedLeads, linkedJobs, linkedPayments, timeline } = account;
+  const account = getCustomerOperationalAccount(customer, allLeads, allJobs, allPayments, tasksList);
+  const { counters, nextAction, linkedLeads, linkedJobs, linkedPayments, linkedTasks, timeline } = account;
 
   const handleNoteSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -36,6 +48,37 @@ export const CustomerAccountView: React.FC<CustomerAccountViewProps> = ({
     onAddNote(customer.id, noteInput.trim());
     setNoteInput('');
     showToast('Internal note logged to customer account');
+  };
+
+  const handleCreateReminderSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!reminderTitle.trim()) return;
+
+    const newTask: TaskRecord = {
+      id: `tsk-${Date.now()}`,
+      title: reminderTitle.trim(),
+      type: reminderType,
+      status: 'Open',
+      priority: reminderPriority,
+      dueDateTime: reminderDue,
+      assignee: 'Ops Desk',
+      linkedEntityId: customer.id,
+      linkedEntityType: 'Customer',
+      linkedEntityName: customer.name,
+      notes: `Scheduled reminder for ${customer.name}`,
+    };
+
+    setTasksList((prev) => [newTask, ...prev]);
+    setReminderTitle('');
+    setShowAddReminderForm(false);
+    showToast(`Created ${reminderType} reminder for ${customer.name}`);
+  };
+
+  const handleTaskStatusChange = (task: TaskRecord, newStatus: TaskRecord['status']) => {
+    setTasksList((prev) =>
+      prev.map((t) => (t.id === task.id ? { ...t, status: newStatus } : t))
+    );
+    showToast(`Marked reminder as ${newStatus}`);
   };
 
   const showToast = (msg: string) => {
@@ -150,6 +193,9 @@ export const CustomerAccountView: React.FC<CustomerAccountViewProps> = ({
                 💬 WhatsApp
               </Button>
             </a>
+            <Button variant="secondary" size="sm" onClick={() => setShowAddReminderForm(true)}>
+              ⏰ + Reminder
+            </Button>
             <Button variant="secondary" size="sm" onClick={() => showToast('Dispatched new job order form for customer')}>
               🚚 + Job
             </Button>
@@ -219,8 +265,101 @@ export const CustomerAccountView: React.FC<CustomerAccountViewProps> = ({
 
       {/* Main Two-Column Workspace Layout */}
       <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) 340px', gap: '16px' }} className="rv-customer-workspace">
-        {/* LEFT COLUMN: Operational Records (Sections C, D, E, F) */}
+        {/* LEFT COLUMN: Operational Records (Sections C, D, E, Tasks, F) */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+
+          {/* Tasks & Follow-up Reminders Section */}
+          <Card dense>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+              <span style={{ fontSize: '12px', fontWeight: 700, color: 'var(--rv-text-primary)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                🔔 Tasks & Follow-up Reminders ({linkedTasks.length})
+              </span>
+              <Button
+                variant={showAddReminderForm ? 'ghost' : 'secondary'}
+                size="sm"
+                onClick={() => setShowAddReminderForm(!showAddReminderForm)}
+              >
+                {showAddReminderForm ? 'Cancel' : '+ Add Reminder'}
+              </Button>
+            </div>
+
+            {/* 1-Click Reminder Creation Form */}
+            {showAddReminderForm && (
+              <form onSubmit={handleCreateReminderSubmit} style={{ background: 'var(--rv-bg-base)', border: '1px solid var(--rv-border-default)', padding: '12px', borderRadius: '6px', marginBottom: '12px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                <div style={{ fontSize: '11px', fontWeight: 600, color: 'var(--rv-text-primary)', textTransform: 'uppercase' }}>
+                  Create New Follow-up Reminder for {customer.name}
+                </div>
+
+                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                  <input
+                    type="text"
+                    className="rv-lead-note-input"
+                    placeholder="Reminder title (e.g., Call back for quote review...)"
+                    value={reminderTitle}
+                    onChange={(e) => setReminderTitle(e.target.value)}
+                    style={{ flex: 2, minWidth: '200px' }}
+                    required
+                  />
+
+                  <select
+                    className="rv-lead-note-input"
+                    value={reminderType}
+                    onChange={(e) => setReminderType(e.target.value as TaskType)}
+                    style={{ flex: 1, minWidth: '130px' }}
+                  >
+                    <option value="Callback">Callback</option>
+                    <option value="Quote Follow-up">Quote Follow-up</option>
+                    <option value="Payment Reminder">Payment Reminder</option>
+                    <option value="Dispatch Follow-up">Dispatch Follow-up</option>
+                    <option value="Send Note">Send Note</option>
+                  </select>
+
+                  <input
+                    type="text"
+                    className="rv-lead-note-input"
+                    placeholder="Due timing (e.g., Tomorrow, 11:00 AM)"
+                    value={reminderDue}
+                    onChange={(e) => setReminderDue(e.target.value)}
+                    style={{ flex: 1, minWidth: '150px' }}
+                  />
+
+                  <select
+                    className="rv-lead-note-input"
+                    value={reminderPriority}
+                    onChange={(e) => setReminderPriority(e.target.value as TaskPriority)}
+                    style={{ flex: 1, minWidth: '100px' }}
+                  >
+                    <option value="Normal">Normal Priority</option>
+                    <option value="High">High Priority</option>
+                    <option value="Critical">Critical</option>
+                  </select>
+
+                  <Button type="submit" variant="primary" size="sm">
+                    Save Reminder
+                  </Button>
+                </div>
+              </form>
+            )}
+
+            {linkedTasks.length === 0 ? (
+              <EmptyState
+                icon="🔔"
+                title="No active reminders for this customer"
+                description="Use the + Add Reminder action to schedule callbacks or follow-up notes."
+              />
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                {linkedTasks.map((task) => (
+                  <TaskItem
+                    key={task.id}
+                    task={task}
+                    onStatusChange={handleTaskStatusChange}
+                    onActionClick={() => showToast(`Selected reminder ${task.title}`)}
+                  />
+                ))}
+              </div>
+            )}
+          </Card>
 
           {/* C. Lead / Inquiry History */}
           <Card dense>
@@ -524,7 +663,7 @@ export const CustomerAccountView: React.FC<CustomerAccountViewProps> = ({
               <Button
                 variant="secondary"
                 size="sm"
-                onClick={() => showToast(`Scheduled follow-up reminder for ${customer.name}`)}
+                onClick={() => setShowAddReminderForm(true)}
                 style={{ width: '100%', justifyContent: 'flex-start' }}
               >
                 ⏰ Schedule Follow-Up Reminder

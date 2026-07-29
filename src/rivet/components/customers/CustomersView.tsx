@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { INITIAL_CUSTOMERS, INITIAL_LEADS, INITIAL_JOBS, INITIAL_PAYMENTS } from '../../data/mockData';
+import { INITIAL_CUSTOMERS, INITIAL_LEADS, INITIAL_JOBS, INITIAL_PAYMENTS, INITIAL_TASKS } from '../../data/mockData';
 import { CustomerRecord, CustomerHealthStatus, SimulationMode } from '../../types/rivet';
 import { PageHeader } from '../ui/PageHeader';
 import { Card } from '../ui/Card';
@@ -81,6 +81,7 @@ export const CustomersView: React.FC = () => {
           allLeads={INITIAL_LEADS}
           allJobs={INITIAL_JOBS}
           allPayments={INITIAL_PAYMENTS}
+          allTasks={INITIAL_TASKS}
           onBack={() => setSelectedCustomer(null)}
           onAddNote={handleAddNote}
         />

@@ -1,10 +1,11 @@
-import { CustomerRecord, Lead, Job, PaymentRecord, CustomerHistoryItem } from '../types/rivet';
+import { CustomerRecord, Lead, Job, PaymentRecord, TaskRecord, CustomerHistoryItem } from '../types/rivet';
 
 export interface CustomerOperationalAccount {
   customer: CustomerRecord;
   linkedLeads: Lead[];
   linkedJobs: Job[];
   linkedPayments: PaymentRecord[];
+  linkedTasks: TaskRecord[];
   timeline: CustomerHistoryItem[];
   counters: {
     totalInquiries: number;
@@ -27,7 +28,8 @@ export function getCustomerOperationalAccount(
   customer: CustomerRecord,
   allLeads: Lead[],
   allJobs: Job[],
-  allPayments: PaymentRecord[]
+  allPayments: PaymentRecord[],
+  allTasks: TaskRecord[] = []
 ): CustomerOperationalAccount {
   const normPhone = customer.phone.replace(/[\s\-\+\(\)]/g, '').slice(-10);
   const normName = customer.name.toLowerCase().trim();
@@ -53,7 +55,14 @@ export function getCustomerOperationalAccount(
     return (normPhone && pPhone && normPhone === pPhone) || normName.includes(pName) || pName.includes(normName);
   });
 
-  // 4. Compute Counters
+  // 4. Match linked Tasks
+  const linkedTasks = allTasks.filter((t) => {
+    if (t.linkedEntityId === customer.id) return true;
+    const tName = t.linkedEntityName?.toLowerCase().trim() || '';
+    return normName && tName && (normName.includes(tName) || tName.includes(normName));
+  });
+
+  // 5. Compute Counters
   const activeJobs = linkedJobs.filter((j) => j.status === 'Scheduled' || j.status === 'In Progress').length;
   
   // Calculate financial totals
@@ -69,7 +78,7 @@ export function getCustomerOperationalAccount(
     }
   }
 
-  // 5. Build Combined Timeline
+  // 6. Build Combined Timeline
   const combinedTimeline: CustomerHistoryItem[] = [...customer.history];
 
   // Add Lead Events to timeline
@@ -108,6 +117,18 @@ export function getCustomerOperationalAccount(
     });
   });
 
+  // Add Task Reminders to timeline
+  linkedTasks.forEach((t) => {
+    combinedTimeline.push({
+      id: `timeline-task-${t.id}`,
+      date: t.dueDateTime || 'Recent',
+      type: 'note',
+      title: `Reminder (${t.type}): ${t.title}`,
+      details: `Status: ${t.status} • Priority: ${t.priority} • Assignee: ${t.assignee}${t.notes ? ` • Note: ${t.notes}` : ''}`,
+      badgeLabel: t.status,
+    });
+  });
+
   // Deduplicate and sort timeline
   const uniqueTimelineMap = new Map<string, CustomerHistoryItem>();
   combinedTimeline.forEach((item) => {
@@ -115,7 +136,7 @@ export function getCustomerOperationalAccount(
   });
   const sortedTimeline = Array.from(uniqueTimelineMap.values());
 
-  // 6. Next Action Guidance
+  // 7. Next Action Guidance
   let recommendedAction = 'No immediate action required';
   let pendingPaymentText = 'No pending balance';
   let activeJobText = 'No active jobs in transit';
@@ -142,6 +163,7 @@ export function getCustomerOperationalAccount(
     linkedLeads,
     linkedJobs,
     linkedPayments,
+    linkedTasks,
     timeline: sortedTimeline,
     counters: {
       totalInquiries: Math.max(linkedLeads.length, 1),
