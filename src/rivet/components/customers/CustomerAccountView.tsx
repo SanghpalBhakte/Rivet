@@ -15,6 +15,7 @@ interface CustomerAccountViewProps {
   allTasks: TaskRecord[];
   onBack: () => void;
   onAddNote: (customerId: string, noteText: string) => void;
+  onEditNote?: (noteId: string, newText: string) => void;
   onUpdateFollowUp: (customerId: string, nextTime: string) => void;
   onUpdateLeadStage: (leadId: string, newStage: LeadStage) => void;
   onUpdateJobStatus: (jobId: string, newStatus: JobStatus) => void;
@@ -29,6 +30,7 @@ export const CustomerAccountView: React.FC<CustomerAccountViewProps> = ({
   allTasks,
   onBack,
   onAddNote,
+  onEditNote,
   onUpdateFollowUp,
   onUpdateLeadStage,
   onUpdateJobStatus,
@@ -36,6 +38,8 @@ export const CustomerAccountView: React.FC<CustomerAccountViewProps> = ({
 }) => {
   const [tasksList, setTasksList] = useState<TaskRecord[]>(allTasks);
   const [noteInput, setNoteInput] = useState('');
+  const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
+  const [editingNoteText, setEditingNoteText] = useState('');
   const [showAddReminderForm, setShowAddReminderForm] = useState(false);
   const [showScheduleFollowUpInput, setShowScheduleFollowUpInput] = useState(false);
 
@@ -712,13 +716,52 @@ export const CustomerAccountView: React.FC<CustomerAccountViewProps> = ({
                         </Badge>
                       )}
                     </div>
-                    <span className="rv-num" style={{ fontSize: '11px', color: 'var(--rv-text-muted)' }}>
-                      {item.date}
-                    </span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <span className="rv-num" style={{ fontSize: '11px', color: 'var(--rv-text-muted)' }}>
+                        {item.date}
+                      </span>
+                      {item.type === 'note' && (
+                        <button
+                          style={{ background: 'none', border: 'none', color: 'var(--rv-status-callback-text)', fontSize: '11px', cursor: 'pointer', padding: 0 }}
+                          onClick={() => {
+                            setEditingNoteId(editingNoteId === item.id ? null : item.id);
+                            setEditingNoteText(item.details);
+                          }}
+                        >
+                          {editingNoteId === item.id ? 'Cancel' : '✏️ Edit'}
+                        </button>
+                      )}
+                    </div>
                   </div>
-                  <div style={{ fontSize: '12px', color: 'var(--rv-text-secondary)', marginTop: '2px' }}>
-                    {item.details}
-                  </div>
+
+                  {editingNoteId === item.id ? (
+                    <form
+                      onSubmit={(e) => {
+                        e.preventDefault();
+                        if (!editingNoteText.trim()) return;
+                        if (onEditNote) onEditNote(item.id, editingNoteText.trim());
+                        setEditingNoteId(null);
+                        showToast('Updated internal ops note');
+                      }}
+                      style={{ display: 'flex', gap: '6px', marginTop: '6px' }}
+                    >
+                      <input
+                        type="text"
+                        className="rv-lead-note-input"
+                        value={editingNoteText}
+                        onChange={(e) => setEditingNoteText(e.target.value)}
+                        style={{ flex: 1, fontSize: '11px' }}
+                        required
+                      />
+                      <Button type="submit" variant="primary" size="sm">
+                        Save
+                      </Button>
+                    </form>
+                  ) : (
+                    <div style={{ fontSize: '12px', color: 'var(--rv-text-secondary)', marginTop: '2px' }}>
+                      {item.details}
+                    </div>
+                  )}
                 </div>
               ))}
             </div>

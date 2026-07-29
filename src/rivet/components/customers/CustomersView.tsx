@@ -63,6 +63,30 @@ export const CustomersView: React.FC = () => {
     }
   };
 
+  // Edit note handler
+  const handleEditNote = (noteId: string, newText: string) => {
+    if (!selectedCustomer) return;
+    const customerId = selectedCustomer.id;
+    setCustomers((prev) =>
+      prev.map((c) =>
+        c.id === customerId
+          ? {
+              ...c,
+              history: c.history.map((h) => (h.id === noteId ? { ...h, details: newText } : h)),
+            }
+          : c
+      )
+    );
+    setSelectedCustomer((prev) =>
+      prev
+        ? {
+            ...prev,
+            history: prev.history.map((h) => (h.id === noteId ? { ...h, details: newText } : h)),
+          }
+        : null
+    );
+  };
+
   // Follow-up date update handler
   const handleUpdateFollowUp = (customerId: string, nextTime: string) => {
     setCustomers((prev) =>
@@ -135,6 +159,7 @@ export const CustomersView: React.FC = () => {
           allTasks={tasks}
           onBack={() => setSelectedCustomer(null)}
           onAddNote={handleAddNote}
+          onEditNote={handleEditNote}
           onUpdateFollowUp={handleUpdateFollowUp}
           onUpdateLeadStage={handleUpdateLeadStage}
           onUpdateJobStatus={handleUpdateJobStatus}
