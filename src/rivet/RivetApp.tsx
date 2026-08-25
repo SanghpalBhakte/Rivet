@@ -19,11 +19,12 @@ interface RivetAppProps {
 const getInitialTab = (): ActiveModule => {
   if (typeof window === 'undefined') return 'dashboard';
   
-  const path = window.location.pathname.replace(/^\/+|\/+$/g, '').toLowerCase();
+  const pathSegments = window.location.pathname.split('/').filter(Boolean);
+  const lastSegment = pathSegments[pathSegments.length - 1]?.toLowerCase();
   const validTabs: ActiveModule[] = ['dashboard', 'leads', 'jobs', 'payments', 'customers', 'tasks'];
   
-  if (validTabs.includes(path as ActiveModule)) {
-    return path as ActiveModule;
+  if (lastSegment && validTabs.includes(lastSegment as ActiveModule)) {
+    return lastSegment as ActiveModule;
   }
 
   const hash = window.location.hash.replace(/^#\/?/, '').toLowerCase();
@@ -49,7 +50,12 @@ const RivetAppContent: React.FC<RivetAppProps> = ({ onBackToPortfolio }) => {
   const handleSelectTab = (tab: ActiveModule) => {
     setActiveTab(tab);
     if (typeof window !== 'undefined') {
-      const targetPath = tab === 'dashboard' ? '/' : `/${tab}`;
+      const pathSegments = window.location.pathname.split('/').filter(Boolean);
+      // Detect if app is hosted under subpath (e.g. /Rivet/)
+      const isSubpath = pathSegments.length > 0 && pathSegments[0].toLowerCase() === 'rivet';
+      const basePrefix = isSubpath ? '/Rivet' : '';
+      const targetPath = tab === 'dashboard' ? `${basePrefix}/` : `${basePrefix}/${tab}`;
+      
       if (window.location.pathname !== targetPath) {
         window.history.pushState({}, '', targetPath);
       }
