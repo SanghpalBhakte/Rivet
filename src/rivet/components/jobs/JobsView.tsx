@@ -23,8 +23,8 @@ export const JobsView: React.FC = () => {
   const [isNewJobModalOpen, setIsNewJobModalOpen] = useState(false);
 
   useEffect(() => {
-    ApiService.getJobs().then(setJobs);
-  }, []);
+    ApiService.getJobs(user?.workspaceId).then(setJobs);
+  }, [user?.workspaceId]);
 
   // Filter jobs by search query and status filter
   const filteredJobs = useMemo(() => {

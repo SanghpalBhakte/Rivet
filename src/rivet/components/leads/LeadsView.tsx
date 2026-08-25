@@ -24,16 +24,29 @@ export const LeadsView: React.FC = () => {
   const [isNewInquiryOpen, setIsNewInquiryOpen] = useState(false);
 
   useEffect(() => {
-    ApiService.getLeads().then(setLeads);
-  }, []);
+    ApiService.getLeads(user?.workspaceId).then(setLeads);
+  }, [user?.workspaceId]);
 
-  // Stage transition workflow handler
+  // Stage transition workflow handler — connects Confirmed leads directly to Dispatch Jobs
   const handleStageChange = (leadId: string, newStage: LeadStage) => {
     if (!can('lead:update_stage')) {
       alert(`Role "${user?.role}" does not have permission to update lead stages.`);
       return;
     }
-    ApiService.updateLeadStage(leadId, newStage, actor).then(setLeads).catch(console.error);
+    const targetLead = leads.find((l) => l.id === leadId);
+    if (newStage === 'Confirmed' && targetLead) {
+      const numAmt = parseFloat((targetLead.quoteAmount || targetLead.budget || '2500').replace(/[^0-9.]/g, '')) || 2500;
+      ApiService.convertLeadToJob(
+        targetLead,
+        targetLead.nextFollowUp || 'Today, 5:00 PM',
+        'Central HQ Depot',
+        'Client Location',
+        numAmt,
+        actor
+      ).then(setLeads).catch(console.error);
+    } else {
+      ApiService.updateLeadStage(leadId, newStage, actor).then(setLeads).catch(console.error);
+    }
   };
 
   // Follow-up date/time schedule handler

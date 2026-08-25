@@ -24,8 +24,8 @@ export const TasksView: React.FC = () => {
   const [actionMsg, setActionMsg] = useState<string | null>(null);
 
   useEffect(() => {
-    ApiService.getTasks().then(setTasks);
-  }, []);
+    ApiService.getTasks(user?.workspaceId).then(setTasks);
+  }, [user?.workspaceId]);
 
   // New Task Form Modal/Inline state
   const [showCreateModal, setShowCreateModal] = useState(false);

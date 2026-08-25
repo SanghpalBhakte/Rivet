@@ -25,12 +25,13 @@ export const CustomersView: React.FC = () => {
   const [simMode, setSimMode] = useState<SimulationMode>('normal');
 
   useEffect(() => {
-    ApiService.getCustomers().then(setCustomers);
-    ApiService.getLeads().then(setLeads);
-    ApiService.getJobs().then(setJobs);
-    ApiService.getPayments().then(setPayments);
-    ApiService.getTasks().then(setTasks);
-  }, []);
+    const wsId = user?.workspaceId;
+    ApiService.getCustomers(wsId).then(setCustomers);
+    ApiService.getLeads(wsId).then(setLeads);
+    ApiService.getJobs(wsId).then(setJobs);
+    ApiService.getPayments(wsId).then(setPayments);
+    ApiService.getTasks(wsId).then(setTasks);
+  }, [user?.workspaceId]);
 
   // Filter customers by search query and health status filter
   const filteredCustomers = useMemo(() => {

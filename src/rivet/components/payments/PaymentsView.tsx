@@ -21,8 +21,8 @@ export const PaymentsView: React.FC = () => {
   const [simMode, setSimMode] = useState<SimulationMode>('normal');
 
   useEffect(() => {
-    ApiService.getPayments().then(setPayments);
-  }, []);
+    ApiService.getPayments(user?.workspaceId).then(setPayments);
+  }, [user?.workspaceId]);
 
   // Filter payments by search query and status filter
   const filteredPayments = useMemo(() => {
