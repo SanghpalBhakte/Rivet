@@ -13,8 +13,9 @@ if (!isSupabaseConfigured) {
   );
 }
 
-// Initialized Supabase Client
-export const supabase = createClient(
-  supabaseUrl || 'https://placeholder-project.supabase.co',
-  supabaseAnonKey || 'placeholder-anon-key'
-);
+// Only create a real Supabase client when credentials are present.
+// Previously this fell back to a 'placeholder' URL which fired real HTTP requests
+// and failed silently on every SDK call when Supabase was not configured.
+export const supabase = isSupabaseConfigured
+  ? createClient(supabaseUrl, supabaseAnonKey)
+  : (null as unknown as ReturnType<typeof createClient>);
