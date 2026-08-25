@@ -27,11 +27,11 @@ export const TaskItem: React.FC<TaskItemProps> = ({
     }
   };
 
-  const getPriorityColor = (priority: TaskRecord['priority']) => {
+  const getPriorityBorder = (priority: TaskRecord['priority']) => {
     switch (priority) {
       case 'Critical': return 'var(--rv-status-overdue-text)';
-      case 'High': return 'var(--rv-status-callback-text)';
-      case 'Normal': default: return 'var(--rv-text-muted)';
+      case 'High': return 'var(--rv-accent-sky)';
+      case 'Normal': default: return 'transparent';
     }
   };
 
@@ -39,56 +39,50 @@ export const TaskItem: React.FC<TaskItemProps> = ({
     <div
       onClick={() => onSelect && onSelect(task)}
       style={{
-        background: 'var(--rv-bg-base)',
-        border: '1px solid var(--rv-border-default)',
+        backgroundColor: 'var(--rv-bg-surface)',
+        border: '1px solid var(--rv-border-subtle)',
+        borderLeft: `3px solid ${getPriorityBorder(task.priority)}`,
         borderRadius: 'var(--rv-radius-md)',
-        padding: '10px 14px',
+        padding: '12px 16px',
         display: 'flex',
         flexDirection: 'column',
         gap: '8px',
-        borderLeft: `3px solid ${getPriorityColor(task.priority)}`,
         cursor: onSelect ? 'pointer' : 'default',
         transition: 'background-color 0.12s ease',
       }}
-      className="rv-queue-item"
     >
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '12px', flexWrap: 'wrap' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '14px', flexWrap: 'wrap' }}>
         <div style={{ flex: 1, minWidth: '220px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px', flexWrap: 'wrap' }}>
-            <Badge variant={getStatusVariant(task.status)}>{task.status.toUpperCase()}</Badge>
-            <span style={{ fontSize: '11px', color: 'var(--rv-text-muted)', fontWeight: 600 }}>
+            <Badge variant={getStatusVariant(task.status)}>{task.status}</Badge>
+            <span style={{ fontSize: '11px', color: 'var(--rv-text-muted)', fontWeight: 500 }}>
               {task.type}
             </span>
-            <Badge variant={task.priority === 'Critical' ? 'overdue' : task.priority === 'High' ? 'callback' : 'neutral'}>
-              {task.priority.toUpperCase()}
-            </Badge>
             {task.linkedEntityName && (
               <span style={{ fontSize: '11px', color: 'var(--rv-text-secondary)' }}>
                 • {task.linkedEntityType}: <strong style={{ color: 'var(--rv-text-primary)' }}>{task.linkedEntityName}</strong>
               </span>
             )}
           </div>
-          <h4 style={{ margin: 0, fontSize: '13px', fontWeight: 600, color: 'var(--rv-text-primary)' }}>
+          <h4 style={{ margin: 0, fontSize: '13px', fontWeight: 500, color: 'var(--rv-text-primary)' }}>
             {task.title}
           </h4>
         </div>
 
         <div style={{ textAlign: 'right', flexShrink: 0 }}>
-          <div className="rv-num" style={{ fontSize: '12px', fontWeight: 600, color: task.status === 'Overdue' ? 'var(--rv-status-overdue-text)' : 'var(--rv-text-primary)' }}>
+          <div className="rv-num" style={{ fontSize: '12px', fontWeight: 500, color: task.status === 'Overdue' ? 'var(--rv-status-overdue-text)' : 'var(--rv-text-secondary)' }}>
             {task.dueDateTime}
           </div>
-          <div style={{ fontSize: '11px', color: 'var(--rv-text-muted)', marginTop: '2px' }}>
-            Assignee: <strong style={{ color: 'var(--rv-text-secondary)' }}>{task.assignee}</strong>
+          <div style={{ fontSize: '11px', color: 'var(--rv-text-dim)', marginTop: '1px' }}>
+            {task.assignee}
           </div>
         </div>
       </div>
 
       {(task.notes || onActionClick || onStatusChange || onSnooze) && (
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '4px', flexWrap: 'wrap', gap: '8px' }}>
-          <div style={{ fontSize: '12px', color: 'var(--rv-text-secondary)', flex: 1, minWidth: '200px' }}>
-            {task.notes && (
-              <span style={{ fontStyle: 'italic' }}>"{task.notes}"</span>
-            )}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '2px', flexWrap: 'wrap', gap: '8px' }}>
+          <div style={{ fontSize: '11.5px', color: 'var(--rv-text-muted)', flex: 1, minWidth: '180px' }}>
+            {task.notes && <span>{task.notes}</span>}
           </div>
           
           <div style={{ display: 'flex', gap: '6px', alignItems: 'center', flexWrap: 'wrap' }}>
@@ -100,7 +94,7 @@ export const TaskItem: React.FC<TaskItemProps> = ({
                   e.stopPropagation();
                   onSnooze(task);
                 }}
-                title="Snooze / Reschedule Task"
+                title="Snooze Task"
               >
                 ⏰ Snooze
               </Button>
@@ -138,7 +132,7 @@ export const TaskItem: React.FC<TaskItemProps> = ({
                   onActionClick(task);
                 }}
               >
-                Open {task.linkedEntityType || 'Record'}
+                View {task.linkedEntityType || 'Record'}
               </Button>
             )}
           </div>
@@ -147,4 +141,3 @@ export const TaskItem: React.FC<TaskItemProps> = ({
     </div>
   );
 };
-

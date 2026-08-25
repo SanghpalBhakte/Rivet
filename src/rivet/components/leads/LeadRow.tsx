@@ -18,73 +18,69 @@ export const LeadRow: React.FC<LeadRowProps> = ({
     switch (stage) {
       case 'New': return 'callback';
       case 'Contacted': return 'neutral';
-      case 'Quote Sent': return 'overdue';
+      case 'Quote Sent': return 'quote';
       case 'Confirmed': return 'job';
       case 'Closed': return 'completed';
       default: return 'neutral';
     }
   };
 
-  // Determine stage-based action CTA label
   const getStageActionLabel = (stage: string) => {
     switch (stage) {
       case 'New': return 'Mark Contacted';
-      case 'Contacted': return 'Send Quote';
-      case 'Quote Sent': return 'Mark Confirmed';
-      case 'Confirmed': return 'Mark Closed';
-      case 'Closed': return 'Reopen Lead';
-      case 'Lost': return 'Reopen Lead';
+      case 'Contacted': return 'Prepare Quote';
+      case 'Quote Sent': return 'Confirm Booking';
+      case 'Confirmed': return 'Archive Lead';
+      case 'Closed': return 'Reopen';
+      case 'Lost': return 'Reopen';
       default: return 'Advance Stage';
     }
   };
 
   return (
-    <li
-      className="rv-queue-item rv-lead-row"
+    <div
+      className="rv-list-row"
       onClick={() => onSelect(lead)}
-      style={{ cursor: 'pointer' }}
+      role="row"
     >
-      {/* Customer Info & Service Request */}
-      <div className="rv-queue-item__main">
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+      <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: '3px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
           <Badge variant={getBadgeVariant(lead.stage)}>
-            {lead.stage.toUpperCase()}
+            {lead.stage}
           </Badge>
-          <span className="rv-queue-item__client" style={{ fontSize: '11px', fontWeight: 600, color: 'var(--rv-text-secondary)' }}>{lead.customerName}</span>
-          <span className="rv-queue-item__phone rv-tabular" style={{ fontSize: '11px', color: 'var(--rv-text-muted)' }}>{lead.customerPhone}</span>
+          <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--rv-text-primary)' }}>
+            {lead.customerName}
+          </span>
+          <span className="rv-mono rv-num" style={{ fontSize: '11px', color: 'var(--rv-text-muted)' }}>
+            {lead.customerPhone}
+          </span>
           <span style={{ fontSize: '11px', color: 'var(--rv-text-dim)' }}>•</span>
           <span style={{ fontSize: '11px', color: 'var(--rv-text-muted)' }}>{lead.source}</span>
         </div>
 
-        <h4 className="rv-queue-item__title" style={{ margin: 0, marginBottom: '2px', fontSize: '13px', fontWeight: 600, color: 'var(--rv-text-primary)' }}>
+        <div style={{ fontSize: '13px', fontWeight: 500, color: 'var(--rv-text-primary)' }}>
           {lead.serviceTitle}
-        </h4>
+        </div>
 
-        {/* Scannable Quote Status & Budget */}
-        <div className="rv-queue-item__context" style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', gap: '14px', fontSize: '11.5px', color: 'var(--rv-text-muted)', flexWrap: 'wrap' }}>
           <span>Budget: <strong className="rv-num" style={{ color: 'var(--rv-text-secondary)' }}>{lead.budget}</strong></span>
-          {lead.quoteStatus && (
-            <span style={{ color: lead.stage === 'Quote Sent' ? 'var(--rv-status-overdue-text)' : 'var(--rv-text-muted)' }}>
-              • {lead.quoteStatus}
-            </span>
+          {lead.quoteAmount && (
+            <span>Quote: <strong className="rv-num" style={{ color: 'var(--rv-brand)' }}>{lead.quoteAmount}</strong></span>
           )}
-          <span>• Owner: {lead.assignee}</span>
+          <span>Owner: {lead.assignee}</span>
         </div>
       </div>
 
-      {/* Schedule & Compact Quick Action CTA */}
-      <div className="rv-queue-item__right">
-        <div className="rv-queue-item__due">
-          <div style={{ fontSize: '10px', color: 'var(--rv-text-muted)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-            Next Follow-up
-          </div>
-          <div className="rv-tabular" style={{ fontWeight: 500 }}>
-            {lead.nextFollowUp}
+      <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexShrink: 0 }}>
+        <div style={{ textAlign: 'right' }}>
+          <div className="rv-kicker" style={{ fontSize: '10px' }}>Follow-up</div>
+          <div className="rv-num" style={{ fontSize: '12px', fontWeight: 500, color: 'var(--rv-text-secondary)' }}>
+            {lead.nextFollowUp || 'None'}
           </div>
         </div>
 
         <Button
-          variant={lead.stage === 'Quote Sent' ? 'overdue' : 'secondary'}
+          variant={lead.stage === 'Quote Sent' ? 'primary' : 'secondary'}
           size="sm"
           onClick={(e) => {
             e.stopPropagation();
@@ -95,6 +91,6 @@ export const LeadRow: React.FC<LeadRowProps> = ({
           {getStageActionLabel(lead.stage)}
         </Button>
       </div>
-    </li>
+    </div>
   );
 };

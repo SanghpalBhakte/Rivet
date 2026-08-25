@@ -10,8 +10,6 @@ interface JobDetailDrawerProps {
   onAddNote: (jobId: string, noteText: string) => void;
 }
 
-const JOB_STATUSES: JobStatus[] = ['Scheduled', 'In Progress', 'Completed', 'Cancelled'];
-
 export const JobDetailDrawer: React.FC<JobDetailDrawerProps> = ({
   job,
   onClose,
@@ -31,8 +29,8 @@ export const JobDetailDrawer: React.FC<JobDetailDrawerProps> = ({
 
   const getStatusBadgeVariant = (st: JobStatus) => {
     switch (st) {
-      case 'Scheduled': return 'callback';
-      case 'In Progress': return 'job';
+      case 'Scheduled': return 'scheduled';
+      case 'In Progress': return 'active';
       case 'Completed': return 'completed';
       case 'Cancelled': return 'overdue';
       default: return 'neutral';
@@ -40,40 +38,43 @@ export const JobDetailDrawer: React.FC<JobDetailDrawerProps> = ({
   };
 
   return (
-    <div className="rv-lead-drawer-overlay" onClick={onClose}>
-      <div
-        className="rv-lead-drawer"
+    <div className="rv-drawer-overlay" onClick={onClose}>
+      <aside
+        className="rv-drawer"
         onClick={(e) => e.stopPropagation()}
         role="dialog"
         aria-label={`Work order details for ${job.jobCode}`}
       >
-        {/* Drawer Header */}
-        <div className="rv-lead-drawer__header">
+        {/* Header */}
+        <div className="rv-drawer__header">
           <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
-              <Badge variant={getStatusBadgeVariant(job.status)}>{job.status.toUpperCase()}</Badge>
-              <span className="rv-tabular" style={{ fontSize: '11px', color: 'var(--rv-text-muted)', fontWeight: 600 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '3px' }}>
+              <Badge variant={getStatusBadgeVariant(job.status)}>{job.status}</Badge>
+              <span className="rv-mono rv-num" style={{ fontSize: '11px', color: 'var(--rv-brand)', fontWeight: 600 }}>
                 {job.jobCode}
               </span>
             </div>
-            <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 600, color: 'var(--rv-text-primary)' }}>
+            <h2 style={{ margin: 0, fontSize: '16px', fontWeight: 600, color: 'var(--rv-text-primary)' }}>
               {job.serviceTitle}
-            </h3>
+            </h2>
+            <div className="rv-mono rv-num" style={{ fontSize: '12px', color: 'var(--rv-text-muted)', marginTop: '2px' }}>
+              {job.customerName} ({job.customerPhone})
+            </div>
           </div>
-          <Button variant="ghost" size="sm" onClick={onClose} aria-label="Close work order panel">
+          <Button variant="ghost" size="sm" onClick={onClose} aria-label="Close drawer">
             ✕
           </Button>
         </div>
 
-        {/* Drawer Body */}
-        <div className="rv-lead-drawer__body">
-          {/* Status Progression Action Card */}
-          <div className="rv-lead-drawer__section" style={{ background: 'var(--rv-bg-base)', padding: '12px', borderRadius: '6px', border: '1px solid var(--rv-border-default)' }}>
-            <span className="rv-lead-drawer__label" style={{ marginBottom: '6px' }}>Dispatch Action</span>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', flexWrap: 'wrap' }}>
+        {/* Body */}
+        <div className="rv-drawer__body">
+          {/* Dispatch Action Control */}
+          <div style={{ background: 'var(--rv-bg-elevated)', padding: '14px', borderRadius: 'var(--rv-radius-md)', border: '1px solid var(--rv-border-default)', marginBottom: '18px' }}>
+            <div className="rv-kicker" style={{ marginBottom: '6px' }}>Dispatch Action & Status</div>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px' }}>
               <div>
-                <span className="rv-text-muted">Schedule: </span>
-                <strong className="rv-num">{job.scheduledDateTime}</strong>
+                <span style={{ fontSize: '11.5px', color: 'var(--rv-text-muted)' }}>Scheduled: </span>
+                <strong className="rv-num" style={{ fontSize: '12.5px', color: 'var(--rv-text-primary)' }}>{job.scheduledDateTime}</strong>
               </div>
               <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
                 {job.status === 'Scheduled' && (
@@ -98,122 +99,93 @@ export const JobDetailDrawer: React.FC<JobDetailDrawerProps> = ({
             </div>
           </div>
 
-          {/* Route & Location Details */}
-          <div className="rv-lead-drawer__section">
-            <span className="rv-lead-drawer__label">Route & Locations</span>
-            <div style={{ marginTop: '8px', display: 'flex', flexDirection: 'column', gap: '6px', fontSize: '13px' }}>
+          {/* Route Section */}
+          <div style={{ background: 'var(--rv-bg-surface)', border: '1px solid var(--rv-border-subtle)', padding: '14px', borderRadius: 'var(--rv-radius-md)', marginBottom: '18px' }}>
+            <div className="rv-kicker" style={{ marginBottom: '8px' }}>Route Waypoints</div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '12.5px' }}>
               <div>
-                <span className="rv-text-muted">Pickup: </span>
+                <span style={{ color: 'var(--rv-text-muted)' }}>Pickup: </span>
                 <strong style={{ color: 'var(--rv-text-primary)' }}>{job.pickupLocation}</strong>
               </div>
               <div>
-                <span className="rv-text-muted">Drop / Destination: </span>
+                <span style={{ color: 'var(--rv-text-muted)' }}>Destination: </span>
                 <strong style={{ color: 'var(--rv-text-primary)' }}>{job.dropLocation}</strong>
               </div>
             </div>
           </div>
 
-          {/* Vehicle & Driver Assignment */}
-          <div className="rv-lead-drawer__section">
-            <span className="rv-lead-drawer__label">Vehicle & Driver Assignment</span>
-            <div style={{ marginTop: '8px', display: 'flex', flexDirection: 'column', gap: '4px', fontSize: '13px' }}>
-              <div>
-                <span className="rv-text-muted">Assigned Driver: </span>
-                <strong style={{ color: 'var(--rv-text-primary)' }}>{job.driverName}</strong>
+          {/* Assigned Crew & Vehicle */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '18px' }}>
+            <div style={{ background: 'var(--rv-bg-surface)', border: '1px solid var(--rv-border-subtle)', padding: '12px', borderRadius: 'var(--rv-radius-md)' }}>
+              <div className="rv-kicker">Assigned Driver</div>
+              <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--rv-text-primary)', marginTop: '4px' }}>
+                {job.driverName}
               </div>
-              <div>
-                <span className="rv-text-muted">Vehicle Details: </span>
-                <span>{job.vehicleDetails}</span>
-              </div>
-              <div>
-                <span className="rv-text-muted">Customer: </span>
-                <span>{job.customerName} ({job.customerPhone})</span>
+            </div>
+            <div style={{ background: 'var(--rv-bg-surface)', border: '1px solid var(--rv-border-subtle)', padding: '12px', borderRadius: 'var(--rv-radius-md)' }}>
+              <div className="rv-kicker">Vehicle Allocation</div>
+              <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--rv-text-primary)', marginTop: '4px' }}>
+                {job.vehicleDetails}
               </div>
             </div>
           </div>
 
-          {/* Payment Snapshot (Visibility Only) */}
-          <div className="rv-lead-drawer__section" style={{ background: 'rgba(255,255,255,0.02)', padding: '12px', borderRadius: '6px', border: '1px solid var(--rv-border-subtle)' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
-              <span className="rv-lead-drawer__label">Payment Snapshot</span>
-              <Badge variant={job.payment.status === 'Paid' ? 'completed' : 'overdue'}>
-                {job.payment.status.toUpperCase()}
-              </Badge>
-            </div>
-
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', fontSize: '12px', marginTop: '6px' }}>
+          {/* Financial Breakdown */}
+          <div style={{ background: 'var(--rv-bg-surface)', border: '1px solid var(--rv-border-subtle)', padding: '14px', borderRadius: 'var(--rv-radius-md)', marginBottom: '18px' }}>
+            <div className="rv-kicker" style={{ marginBottom: '8px' }}>Payment & Billing</div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px', textAlign: 'center' }}>
               <div>
-                <span className="rv-text-muted">Total Order: </span>
-                <strong className="rv-num">{job.payment.totalAmount}</strong>
+                <div style={{ fontSize: '11px', color: 'var(--rv-text-muted)' }}>Total Amount</div>
+                <div className="rv-num" style={{ fontSize: '14px', fontWeight: 600, color: 'var(--rv-text-primary)' }}>{job.payment.totalAmount}</div>
               </div>
               <div>
-                <span className="rv-text-muted">Advance Paid: </span>
-                <span className="rv-num">{job.payment.advancePaid}</span>
+                <div style={{ fontSize: '11px', color: 'var(--rv-text-muted)' }}>Advance Paid</div>
+                <div className="rv-num" style={{ fontSize: '14px', fontWeight: 600, color: 'var(--rv-status-completed-text)' }}>{job.payment.advancePaid}</div>
               </div>
               <div>
-                <span className="rv-text-muted">Balance Due: </span>
-                <strong className="rv-num" style={{ color: job.payment.dueAmount !== '₹0' ? 'var(--rv-status-overdue-text)' : 'var(--rv-text-secondary)' }}>
-                  {job.payment.dueAmount}
-                </strong>
-              </div>
-              <div>
-                <span className="rv-text-muted">Payment Mode: </span>
-                <span>{job.payment.paymentMethod}</span>
+                <div style={{ fontSize: '11px', color: 'var(--rv-text-muted)' }}>Due Balance</div>
+                <div className="rv-num" style={{ fontSize: '14px', fontWeight: 600, color: 'var(--rv-status-overdue-text)' }}>{job.payment.dueAmount}</div>
               </div>
             </div>
           </div>
 
-          {/* Status Override Buttons */}
-          <div className="rv-lead-drawer__section">
-            <span className="rv-lead-drawer__label">Override Job Status</span>
-            <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginTop: '8px' }}>
-              {JOB_STATUSES.map((st) => (
-                <button
-                  key={st}
-                  className={`rv-stage-pill ${job.status === st ? 'rv-stage-pill--active' : ''}`}
-                  onClick={() => onUpdateStatus(job.id, st)}
-                >
-                  {st}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Dispatch Activity & Internal Notes Log */}
-          <div className="rv-lead-drawer__section" style={{ borderBottom: 'none' }}>
-            <span className="rv-lead-drawer__label">Dispatch Log & Internal Notes ({job.notes.length})</span>
-
-            {/* Quick Add Note Form */}
-            <form onSubmit={handleAddNoteSubmit} style={{ marginTop: '8px', display: 'flex', gap: '8px' }}>
+          {/* Operational Notes */}
+          <div>
+            <div className="rv-kicker" style={{ marginBottom: '8px' }}>Dispatch Notes</div>
+            <form onSubmit={handleAddNoteSubmit} style={{ display: 'flex', gap: '8px', marginBottom: '14px' }}>
               <input
                 type="text"
-                className="rv-lead-note-input"
-                placeholder="Log dispatch update or driver note..."
+                className="rv-input"
+                placeholder="Log dispatch update, toll note, fuel charge..."
                 value={noteInput}
                 onChange={(e) => setNoteInput(e.target.value)}
               />
               <Button type="submit" variant="primary" size="sm">
-                Add
+                Add Note
               </Button>
             </form>
 
-            {/* Notes List */}
-            <div style={{ marginTop: '12px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              {job.notes.map((n) => (
-                <div key={n.id} className="rv-lead-note-card">
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', color: 'var(--rv-text-muted)', marginBottom: '2px' }}>
-                    <strong style={{ color: 'var(--rv-text-secondary)' }}>{n.author}</strong>
-                    <span className="rv-num">{n.timestamp}</span>
+            <div className="rv-timeline">
+              {job.notes && job.notes.length > 0 ? (
+                job.notes.map((note) => (
+                  <div key={note.id} className="rv-timeline-item">
+                    <div className="rv-timeline-dot" />
+                    <div className="rv-timeline-content">
+                      <div className="rv-timeline-title">{note.author}</div>
+                      <div className="rv-timeline-desc">{note.text}</div>
+                      <div className="rv-timeline-time">{note.timestamp}</div>
+                    </div>
                   </div>
-                  <div style={{ fontSize: '12px', color: 'var(--rv-text-primary)' }}>
-                    {n.text}
-                  </div>
+                ))
+              ) : (
+                <div style={{ fontSize: '12px', color: 'var(--rv-text-muted)', padding: '8px 0' }}>
+                  No dispatch notes recorded yet.
                 </div>
-              ))}
+              )}
             </div>
           </div>
         </div>
-      </div>
+      </aside>
     </div>
   );
 };

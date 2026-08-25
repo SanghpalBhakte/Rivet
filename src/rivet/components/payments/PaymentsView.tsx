@@ -1,8 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { INITIAL_PAYMENTS } from '../../data/mockData';
-import { PaymentRecord, PaymentStatus, SimulationMode } from '../../types/rivet';
+import { PaymentRecord, PaymentStatus } from '../../types/rivet';
 import { PageHeader } from '../ui/PageHeader';
-import { Card } from '../ui/Card';
 import { EmptyState } from '../ui/EmptyState';
 import { SkeletonRow } from '../ui/Skeleton';
 import { PaymentRow } from './PaymentRow';
@@ -15,13 +13,16 @@ export const PaymentsView: React.FC = () => {
   const actor = { id: user?.id, name: user?.fullName, workspaceId: user?.workspaceId };
 
   const [payments, setPayments] = useState<PaymentRecord[]>([]);
+  const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<'All' | PaymentStatus>('All');
   const [selectedPayment, setSelectedPayment] = useState<PaymentRecord | null>(null);
-  const [simMode, setSimMode] = useState<SimulationMode>('normal');
 
   useEffect(() => {
-    ApiService.getPayments(user?.workspaceId).then(setPayments);
+    setLoading(true);
+    ApiService.getPayments(user?.workspaceId)
+      .then(setPayments)
+      .finally(() => setLoading(false));
   }, [user?.workspaceId]);
 
   // Filter payments by search query and status filter
@@ -63,64 +64,22 @@ export const PaymentsView: React.FC = () => {
       .catch(console.error);
   };
 
-
-  // Mark fully paid handler
-  const handleMarkFullyPaid = (paymentId: string) => {
-    setPayments((prev) =>
-      prev.map((p) => {
-        if (p.id !== paymentId) return p;
-        const newNote = {
-          id: `pn-${Date.now()}`,
-          author: 'Janai Desk',
-          timestamp: 'Just now',
-          text: `Marked fully paid (₹${p.totalAmount.toLocaleString('en-IN')}). Account settled.`,
-        };
-        return {
-          ...p,
-          amountPaid: p.totalAmount,
-          balanceDue: 0,
-          status: 'Paid',
-          notes: [newNote, ...p.notes],
-        };
-      })
-    );
-
-    if (selectedPayment && selectedPayment.id === paymentId) {
-      setSelectedPayment((prev) => {
-        if (!prev) return null;
-        const newNote = {
-          id: `pn-${Date.now()}`,
-          author: 'Janai Desk',
-          timestamp: 'Just now',
-          text: `Marked fully paid (₹${prev.totalAmount.toLocaleString('en-IN')}). Account settled.`,
-        };
-        return {
-          ...prev,
-          amountPaid: prev.totalAmount,
-          balanceDue: 0,
-          status: 'Paid',
-          notes: [newNote, ...prev.notes],
-        };
-      });
-    }
-  };
-
   // Add note handler
-  const handleAddNote = (paymentId: string, noteText: string) => {
-    const newNote = {
-      id: `pn-${Date.now()}`,
-      author: 'Janai Desk',
-      timestamp: 'Just now',
-      text: noteText,
-    };
-    setPayments((prev) =>
-      prev.map((p) => (p.id === paymentId ? { ...p, notes: [newNote, ...p.notes] } : p))
-    );
-    if (selectedPayment && selectedPayment.id === paymentId) {
-      setSelectedPayment((prev) =>
-        prev ? { ...prev, notes: [newNote, ...prev.notes] } : null
-      );
-    }
+  const handleAddNote = (paymentId: string, text: string) => {
+    ApiService.addNote(paymentId, 'Payment', text, actor.id, actor.name, actor.workspaceId)
+      .then((newNote) => {
+        setPayments((prev) =>
+          prev.map((p) => {
+            if (p.id !== paymentId) return p;
+            const updatedNotes = [newNote, ...p.notes];
+            return { ...p, notes: updatedNotes as any };
+          })
+        );
+        if (selectedPayment?.id === paymentId) {
+          setSelectedPayment((prev) => (prev ? { ...prev, notes: [newNote as any, ...prev.notes] } : null));
+        }
+      })
+      .catch(console.error);
   };
 
   // Status counts for tab badges
@@ -131,99 +90,91 @@ export const PaymentsView: React.FC = () => {
 
   const STATUS_FILTERS: ('All' | PaymentStatus)[] = [
     'All',
-    'Paid',
-    'Partial',
     'Due Soon',
     'Overdue',
+    'Partial',
+    'Paid',
   ];
 
   return (
     <div>
-      {/* Page Header */}
       <PageHeader
-        title="Payments & Accounts Due"
-        subline="Janai Tours & Service Ops • Operational payment tracking, balance collections, & payment records"
-        simMode={simMode}
-        onSimModeChange={setSimMode}
+        kicker="Financial Accounting"
+        title="Payments Ledger"
+        subline="Client service billing, advance collections, balance tracking, and overdue recovery"
       />
 
-      {/* Main Payments Control Card */}
-      <Card dense className="rv-card--hero">
-        {/* Search & Filter Bar */}
-        <div className="rv-leads-bar">
+      <div className="rv-table-container">
+        <div className="rv-table-header">
+          {/* Status Filter Tabs */}
+          <div className="rv-queue-tabs" role="tablist" aria-label="Filter payments by status">
+            {STATUS_FILTERS.map((st) => {
+              const count = getStatusCount(st);
+              const isActive = statusFilter === st;
+              return (
+                <button
+                  key={st}
+                  className={`rv-queue-tab ${isActive ? 'rv-queue-tab--active' : ''}`}
+                  onClick={() => setStatusFilter(st)}
+                  role="tab"
+                  aria-selected={isActive}
+                >
+                  <span>{st}</span>
+                  <span className="rv-queue-tab__count rv-num">{count}</span>
+                </button>
+              );
+            })}
+          </div>
+
           {/* Search Input */}
-          <div className="rv-search-wrapper">
-            <span className="rv-search-icon">🔍</span>
+          <div className="rv-search-bar">
+            <span style={{ color: 'var(--rv-text-muted)', fontSize: '13px' }}>🔍</span>
             <input
               type="text"
-              className="rv-search-input"
-              placeholder="Search payment #, work order #, customer, or method..."
+              placeholder="Search payment code, customer, job..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
-            {searchQuery && (
-              <button
-                className="rv-search-clear"
-                onClick={() => setSearchQuery('')}
-                title="Clear search"
-              >
-                ✕
-              </button>
-            )}
-          </div>
-
-          {/* Status Filter Tabs */}
-          <div className="rv-queue-tabs" role="tablist" aria-label="Filter payments by status">
-            {STATUS_FILTERS.map((st) => (
-              <button
-                key={st}
-                className={`rv-queue-tab ${statusFilter === st ? 'rv-queue-tab--active' : ''}`}
-                onClick={() => setStatusFilter(st)}
-                role="tab"
-                aria-selected={statusFilter === st}
-              >
-                <span>{st}</span>
-                <span className="rv-queue-tab__count rv-num">{getStatusCount(st)}</span>
-              </button>
-            ))}
           </div>
         </div>
 
-        {/* Payments List / Table */}
-        {simMode === 'loading' ? (
-          <div>
+        {/* Payment Rows */}
+        {loading ? (
+          <div style={{ padding: '16px' }}>
             <SkeletonRow />
             <SkeletonRow />
             <SkeletonRow />
           </div>
-        ) : simMode === 'empty' || filteredPayments.length === 0 ? (
+        ) : filteredPayments.length === 0 ? (
           <EmptyState
             icon="💳"
-            title="No payment records match your filter"
-            description="Try clearing your search query or selecting a different status tab."
+            title={payments.length === 0 ? "No Payment Records in Ledger" : "No Matching Payments Found"}
+            description={
+              payments.length === 0
+                ? "Payments ledger is clean. Invoices and collection tasks are automatically generated when jobs are dispatched."
+                : "No payment records match your search or status filter. Try clearing filters."
+            }
           />
         ) : (
-          <ul className="rv-queue-list" role="list">
+          <div className="rv-list-group">
             {filteredPayments.map((payment) => (
               <PaymentRow
                 key={payment.id}
                 payment={payment}
-                onSelect={(selected) => setSelectedPayment(selected)}
-                onQuickAction={(selected) => setSelectedPayment(selected)}
+                onSelect={setSelectedPayment}
+                onQuickAction={(p) => setSelectedPayment(p)}
               />
             ))}
-          </ul>
+          </div>
         )}
-      </Card>
+      </div>
 
       {/* Payment Detail Drawer */}
       <PaymentDetailDrawer
         payment={selectedPayment}
         onClose={() => setSelectedPayment(null)}
         onRecordPayment={handleRecordPayment}
-        onMarkFullyPaid={handleMarkFullyPaid}
         onAddNote={handleAddNote}
-        canRecordPayment={can('payment:record')}
       />
     </div>
   );

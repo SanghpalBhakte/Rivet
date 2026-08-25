@@ -28,35 +28,40 @@ export const PaymentRow: React.FC<PaymentRowProps> = ({
     return `₹${amt.toLocaleString('en-IN')}`;
   };
 
+  const pctPaid = payment.totalAmount > 0 ? Math.min(100, Math.round((payment.amountPaid / payment.totalAmount) * 100)) : 100;
+
   return (
-    <li
-      className="rv-queue-item rv-payment-row"
+    <div
+      className="rv-list-row"
       onClick={() => onSelect(payment)}
-      style={{ cursor: 'pointer' }}
+      role="row"
     >
-      {/* Payment Record Info */}
-      <div className="rv-queue-item__main">
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+      <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: '3px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
           <Badge variant={getBadgeVariant(payment.status)}>
-            {payment.status.toUpperCase()}
+            {payment.status}
           </Badge>
-          <span className="rv-tabular" style={{ fontSize: '11px', color: 'var(--rv-text-muted)', fontWeight: 600 }}>
+          <span className="rv-mono rv-num" style={{ fontSize: '11px', color: 'var(--rv-brand)', fontWeight: 600 }}>
             {payment.paymentCode} • {payment.jobCode}
           </span>
-          <span style={{ fontSize: '11px', color: 'var(--rv-text-dim)' }}>•</span>
-          <span className="rv-queue-item__client" style={{ fontSize: '11px', fontWeight: 600, color: 'var(--rv-text-secondary)' }}>{payment.customerName}</span>
+          <span style={{ fontSize: '12.5px', fontWeight: 600, color: 'var(--rv-text-primary)' }}>
+            {payment.customerName}
+          </span>
+          <span className="rv-mono rv-num" style={{ fontSize: '11px', color: 'var(--rv-text-muted)' }}>
+            {payment.customerPhone}
+          </span>
         </div>
 
-        <h4 className="rv-queue-item__title" style={{ margin: 0, marginBottom: '2px', fontSize: '13px', fontWeight: 600, color: 'var(--rv-text-primary)' }}>
+        <div style={{ fontSize: '13px', fontWeight: 500, color: 'var(--rv-text-primary)' }}>
           {payment.serviceTitle}
-        </h4>
+        </div>
 
-        {/* Amount Breakdown & Payment Method */}
-        <div className="rv-queue-item__context" style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
-          <span>Total: <strong className="rv-num">{formatRupees(payment.totalAmount)}</strong></span>
-          <span>• Paid: <span className="rv-num">{formatRupees(payment.amountPaid)}</span></span>
+        {/* Financial Progress & Breakdown */}
+        <div style={{ display: 'flex', gap: '14px', fontSize: '11.5px', color: 'var(--rv-text-muted)', flexWrap: 'wrap', alignItems: 'center' }}>
+          <span>Total: <strong className="rv-num" style={{ color: 'var(--rv-text-secondary)' }}>{formatRupees(payment.totalAmount)}</strong></span>
+          <span>Paid: <span className="rv-num" style={{ color: 'var(--rv-status-completed-text)' }}>{formatRupees(payment.amountPaid)} ({pctPaid}%)</span></span>
           <span>
-            • Balance Due:{' '}
+            Balance Due:{' '}
             <strong
               className="rv-num"
               style={{
@@ -66,17 +71,14 @@ export const PaymentRow: React.FC<PaymentRowProps> = ({
               {formatRupees(payment.balanceDue)}
             </strong>
           </span>
-          <span>• Method: {payment.paymentMethod}</span>
+          <span>Method: {payment.paymentMethod}</span>
         </div>
       </div>
 
-      {/* Due Date & Action CTA */}
-      <div className="rv-queue-item__right">
-        <div className="rv-queue-item__due">
-          <div style={{ fontSize: '10px', color: 'var(--rv-text-muted)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-            Due Date
-          </div>
-          <div className="rv-tabular" style={{ fontWeight: 500 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexShrink: 0 }}>
+        <div style={{ textAlign: 'right' }}>
+          <div className="rv-kicker" style={{ fontSize: '10px' }}>Due Date</div>
+          <div className="rv-num" style={{ fontSize: '12px', fontWeight: 500, color: payment.status === 'Overdue' ? 'var(--rv-status-overdue-text)' : 'var(--rv-text-secondary)' }}>
             {payment.dueDate}
           </div>
         </div>
@@ -92,6 +94,6 @@ export const PaymentRow: React.FC<PaymentRowProps> = ({
           {payment.status === 'Paid' ? 'View Details' : 'Record Payment'}
         </Button>
       </div>
-    </li>
+    </div>
   );
 };

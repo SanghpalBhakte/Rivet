@@ -9,13 +9,13 @@ import { SkeletonRow } from '../ui/Skeleton';
 interface TodayQueueProps {
   items: QueueItem[];
   onActionComplete: (id: string) => void;
-  simMode: SimulationMode;
+  simMode?: SimulationMode;
 }
 
 export const TodayQueue: React.FC<TodayQueueProps> = ({
   items,
   onActionComplete,
-  simMode,
+  simMode = 'normal',
 }) => {
   const [filter, setFilter] = useState<'all' | QueueItemType>('all');
 
@@ -30,12 +30,11 @@ export const TodayQueue: React.FC<TodayQueueProps> = ({
 
   return (
     <Card
-      title="Today's Queue"
-      subtitle="Operational priority tasks"
+      title="Action Queue"
+      subtitle="Immediate operational priorities"
       dense
-      className="rv-card--hero"
       headerAction={
-        <div className="rv-queue-tabs" role="tablist" aria-label="Filter today's queue">
+        <div className="rv-queue-tabs" role="tablist" aria-label="Filter action queue">
           <button
             className={`rv-queue-tab ${filter === 'all' ? 'rv-queue-tab--active' : ''}`}
             onClick={() => setFilter('all')}
@@ -74,7 +73,7 @@ export const TodayQueue: React.FC<TodayQueueProps> = ({
             role="tab"
             aria-selected={filter === 'job'}
           >
-            <span>Jobs</span>
+            <span>Dispatches</span>
             <span className="rv-queue-tab__count rv-num">{jobCount}</span>
           </button>
         </div>
@@ -86,42 +85,35 @@ export const TodayQueue: React.FC<TodayQueueProps> = ({
           <SkeletonRow />
           <SkeletonRow />
         </div>
-      ) : simMode === 'empty' || filteredItems.length === 0 ? (
+      ) : filteredItems.length === 0 ? (
         <EmptyState
           icon="✓"
-          title="All operational tasks cleared"
-          description="No pending follow-ups or callbacks in this queue section. All Janai Ops tasks are up to date."
+          title="All Action Items Cleared"
+          description="No pending items in this queue category. Active dispatches and reminders will surface here as scheduled."
         />
       ) : (
-        <ul className="rv-queue-list" role="list">
+        <div className="rv-queue-container" role="list">
           {filteredItems.map((item) => (
-            <li key={item.id} className="rv-queue-item">
-              {/* Item Details */}
-              <div className="rv-queue-item__main">
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+            <div key={item.id} className="rv-queue-row">
+              <div className="rv-queue-row__main">
+                <div className="rv-queue-row__header">
                   <Badge variant={item.type}>
-                    {item.type === 'overdue' ? 'OVERDUE' : item.type === 'callback' ? 'CALLBACK' : 'JOB'}
+                    {item.type === 'overdue' ? 'Overdue' : item.type === 'callback' ? 'Callback' : 'Dispatch'}
                   </Badge>
-                  <span className="rv-queue-item__client" style={{ fontSize: '11px', fontWeight: 600, color: 'var(--rv-text-secondary)' }}>{item.clientName}</span>
-                  <span className="rv-queue-item__phone rv-tabular" style={{ fontSize: '11px', color: 'var(--rv-text-muted)' }}>{item.clientPhone}</span>
+                  <span className="rv-queue-row__client">{item.clientName}</span>
                 </div>
-                <h4 className="rv-queue-item__title" style={{ margin: 0, marginBottom: '2px', fontSize: '13px', fontWeight: 600, color: 'var(--rv-text-primary)' }}>
+                <div className="rv-queue-row__title">
                   {item.title}
-                </h4>
-                <div className="rv-queue-item__context" style={{ fontSize: '12px', color: 'var(--rv-text-muted)' }}>
-                  {item.context}
+                </div>
+                <div className="rv-queue-row__context">
+                  <span>{item.context}</span>
                 </div>
               </div>
 
-              {/* Item Due & Primary Action */}
-              <div className="rv-queue-item__right">
-                <div className="rv-queue-item__due">
-                  <div style={{ fontSize: '10px', color: 'var(--rv-text-muted)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-                    Scheduled
-                  </div>
-                  <div className="rv-tabular" style={{ fontWeight: 500 }}>
-                    {item.dueTime}
-                  </div>
+              <div className="rv-queue-row__meta">
+                <div className="rv-queue-row__time">
+                  <div className="rv-kicker" style={{ fontSize: '10px' }}>Due</div>
+                  <div className="rv-num" style={{ fontWeight: 500, color: 'var(--rv-text-secondary)' }}>{item.dueTime}</div>
                 </div>
 
                 <Button
@@ -133,9 +125,9 @@ export const TodayQueue: React.FC<TodayQueueProps> = ({
                   {item.actionLabel}
                 </Button>
               </div>
-            </li>
+            </div>
           ))}
-        </ul>
+        </div>
       )}
     </Card>
   );

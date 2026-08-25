@@ -16,8 +16,8 @@ export const JobRow: React.FC<JobRowProps> = ({
 }) => {
   const getBadgeVariant = (status: string) => {
     switch (status) {
-      case 'Scheduled': return 'callback';
-      case 'In Progress': return 'job';
+      case 'Scheduled': return 'scheduled';
+      case 'In Progress': return 'active';
       case 'Completed': return 'completed';
       case 'Cancelled': return 'overdue';
       default: return 'neutral';
@@ -26,49 +26,42 @@ export const JobRow: React.FC<JobRowProps> = ({
 
   const getActionLabel = (status: string) => {
     switch (status) {
-      case 'Scheduled': return '🚗 Dispatch Vehicle';
-      case 'In Progress': return '✓ Mark Completed';
-      case 'Completed': return '📄 View Work Order';
-      case 'Cancelled': return '🔄 Reopen Job';
-      default: return 'View Details';
+      case 'Scheduled': return 'Dispatch';
+      case 'In Progress': return 'Complete';
+      case 'Completed': return 'View Record';
+      case 'Cancelled': return 'Reopen';
+      default: return 'Details';
     }
   };
 
+  const hasDue = job.payment.dueAmount && job.payment.dueAmount !== '₹0' && job.payment.dueAmount !== '₹0.00';
+
   return (
-    <li
-      className="rv-queue-item rv-job-row"
+    <div
+      className="rv-list-row"
       onClick={() => onSelect(job)}
-      style={{
-        cursor: 'pointer',
-        padding: '12px 16px',
-        background: 'var(--rv-bg-surface)',
-        border: '1px solid var(--rv-border-subtle)',
-        borderRadius: 'var(--rv-radius-md)',
-        marginBottom: '6px',
-        display: 'flex',
-        flexDirection: 'column',
-        gap: '8px',
-      }}
+      role="row"
+      style={{ flexDirection: 'column', alignItems: 'stretch', gap: '10px' }}
     >
       {/* Top Identity & Status Row */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           <Badge variant={getBadgeVariant(job.status)}>
-            {job.status.toUpperCase()}
+            {job.status}
           </Badge>
-          <span className="rv-tabular" style={{ fontSize: '11px', color: 'var(--rv-text-muted)', fontWeight: 600 }}>
+          <span className="rv-mono rv-num" style={{ fontSize: '11px', color: 'var(--rv-brand)', fontWeight: 600 }}>
             {job.jobCode}
           </span>
-          <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--rv-text-primary)' }}>
+          <span style={{ fontSize: '12.5px', fontWeight: 600, color: 'var(--rv-text-primary)' }}>
             {job.customerName}
           </span>
-          <span className="rv-tabular" style={{ fontSize: '11px', color: 'var(--rv-text-dim)' }}>
-            ({job.customerPhone})
+          <span className="rv-mono rv-num" style={{ fontSize: '11px', color: 'var(--rv-text-muted)' }}>
+            {job.customerPhone}
           </span>
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <div className="rv-num" style={{ fontSize: '12px', fontWeight: 600, color: 'var(--rv-text-primary)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+          <div className="rv-num" style={{ fontSize: '12px', fontWeight: 500, color: 'var(--rv-text-secondary)' }}>
             {job.scheduledDateTime}
           </div>
           <Button
@@ -84,30 +77,29 @@ export const JobRow: React.FC<JobRowProps> = ({
         </div>
       </div>
 
-      {/* Middle Service & Route Row */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px', borderTop: '1px dashed var(--rv-border-subtle)', paddingTop: '6px' }}>
-        <div style={{ flex: 1, minWidth: '240px' }}>
-          <h4 style={{ margin: '0 0 2px 0', fontSize: '13px', fontWeight: 600, color: 'var(--rv-text-primary)' }}>
+      {/* Route Journey & Service Title */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px', borderTop: '1px solid var(--rv-border-subtle)', paddingTop: '8px' }}>
+        <div style={{ flex: 1, minWidth: '220px' }}>
+          <div style={{ fontSize: '13px', fontWeight: 500, color: 'var(--rv-text-primary)', marginBottom: '2px' }}>
             {job.serviceTitle}
-          </h4>
-          <div style={{ fontSize: '11px', color: 'var(--rv-text-secondary)', display: 'flex', gap: '6px', alignItems: 'center' }}>
-            <span>📍 <strong>{job.pickupLocation}</strong></span>
+          </div>
+          <div style={{ fontSize: '11.5px', color: 'var(--rv-text-muted)', display: 'flex', gap: '6px', alignItems: 'center' }}>
+            <span style={{ color: 'var(--rv-text-secondary)' }}>📍 {job.pickupLocation}</span>
             <span>➔</span>
-            <span>🏁 <strong>{job.dropLocation}</strong></span>
+            <span style={{ color: 'var(--rv-text-secondary)' }}>🏁 {job.dropLocation}</span>
           </div>
         </div>
 
-        {/* Driver, Vehicle & Payment Snapshot */}
-        <div style={{ display: 'flex', gap: '16px', fontSize: '11px', color: 'var(--rv-text-muted)', alignItems: 'center' }}>
+        {/* Assigned Driver & Payment Balance */}
+        <div style={{ display: 'flex', gap: '16px', fontSize: '11.5px', color: 'var(--rv-text-muted)', alignItems: 'center', flexWrap: 'wrap' }}>
           <div>
-            Driver: <strong style={{ color: 'var(--rv-text-primary)' }}>{job.driverName}</strong> ({job.vehicleDetails})
+            Driver: <strong style={{ color: 'var(--rv-text-primary)' }}>{job.driverName}</strong> {job.vehicleDetails && `(${job.vehicleDetails})`}
           </div>
           <div>
-            Balance: <strong className="rv-num" style={{ color: job.payment.dueAmount !== '₹0' ? 'var(--rv-status-overdue-text)' : 'var(--rv-status-completed-text)' }}>{job.payment.dueAmount}</strong>
+            Balance: <strong className="rv-num" style={{ color: hasDue ? 'var(--rv-status-overdue-text)' : 'var(--rv-status-completed-text)' }}>{job.payment.dueAmount}</strong>
           </div>
         </div>
       </div>
-    </li>
+    </div>
   );
 };
-

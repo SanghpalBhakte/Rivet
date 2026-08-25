@@ -23,7 +23,7 @@ export const LeadDetailDrawer: React.FC<LeadDetailDrawerProps> = ({
   onAddNote,
 }) => {
   const [noteInput, setNoteInput] = useState('');
-  const [scheduleDate, setScheduleDate] = useState('2026-07-28');
+  const [scheduleDate, setScheduleDate] = useState('2026-08-26');
   const [scheduleTime, setScheduleTime] = useState('11:00');
   const [quoteInput, setQuoteInput] = useState('');
 
@@ -74,14 +74,14 @@ export const LeadDetailDrawer: React.FC<LeadDetailDrawerProps> = ({
             size="md"
             onClick={() => onUpdateStage(lead.id, 'Quote Sent')}
           >
-            ✉️ Send Quote & Move to Quote Sent
+            ✉️ Move to Quote Sent
           </Button>
         );
       case 'Quote Sent':
         return (
           <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
             <Button
-              variant="overdue"
+              variant="primary"
               size="md"
               onClick={() => onUpdateStage(lead.id, 'Confirmed')}
             >
@@ -99,11 +99,11 @@ export const LeadDetailDrawer: React.FC<LeadDetailDrawerProps> = ({
       case 'Confirmed':
         return (
           <Button
-            variant="primary"
+            variant="secondary"
             size="md"
             onClick={() => onUpdateStage(lead.id, 'Closed')}
           >
-            🎉 Close & Archive Lead
+            Archive Completed Lead
           </Button>
         );
       case 'Closed':
@@ -123,178 +123,150 @@ export const LeadDetailDrawer: React.FC<LeadDetailDrawerProps> = ({
   };
 
   return (
-    <div className="rv-lead-drawer-overlay" onClick={onClose}>
-      <div
-        className="rv-lead-drawer"
+    <div className="rv-drawer-overlay" onClick={onClose}>
+      <aside
+        className="rv-drawer"
         onClick={(e) => e.stopPropagation()}
         role="dialog"
         aria-label={`Lead details for ${lead.customerName}`}
       >
         {/* Drawer Header */}
-        <div className="rv-lead-drawer__header">
+        <div className="rv-drawer__header">
           <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
-              <Badge variant="neutral">{lead.source}</Badge>
-              <span className="rv-tabular" style={{ fontSize: '11px', color: 'var(--rv-text-muted)' }}>
-                ID: {lead.id}
-              </span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '3px' }}>
+              <Badge variant={lead.stage === 'Quote Sent' ? 'quote' : lead.stage === 'Confirmed' ? 'job' : 'callback'}>
+                {lead.stage}
+              </Badge>
+              <span className="rv-kicker" style={{ fontSize: '11px' }}>{lead.source} INTAKE</span>
             </div>
-            <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 600, color: 'var(--rv-text-primary)' }}>
+            <h2 style={{ margin: 0, fontSize: '16px', fontWeight: 600, color: 'var(--rv-text-primary)' }}>
               {lead.customerName}
-            </h3>
+            </h2>
+            <div className="rv-mono rv-num" style={{ fontSize: '12px', color: 'var(--rv-text-muted)', marginTop: '2px' }}>
+              {lead.customerPhone} {lead.customerEmail && `• ${lead.customerEmail}`}
+            </div>
           </div>
-          <Button variant="ghost" size="sm" onClick={onClose} aria-label="Close lead detail panel">
+
+          <Button variant="ghost" size="sm" onClick={onClose} aria-label="Close drawer">
             ✕
           </Button>
         </div>
 
         {/* Drawer Body */}
-        <div className="rv-lead-drawer__body">
-          {/* Stage Progression Action Hero Slot */}
-          <div className="rv-lead-drawer__section" style={{ background: 'var(--rv-bg-base)', padding: '12px', borderRadius: '6px', border: '1px solid var(--rv-border-default)' }}>
-            <span className="rv-lead-drawer__label" style={{ marginBottom: '6px' }}>Current Stage Action</span>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', flexWrap: 'wrap' }}>
-              <div>
-                <span className="rv-text-muted">Status: </span>
-                <strong style={{ color: 'var(--rv-text-primary)' }}>{lead.stage}</strong>
-              </div>
+        <div className="rv-drawer__body">
+          {/* Action Step Banner */}
+          <div style={{ background: 'var(--rv-bg-elevated)', padding: '14px', borderRadius: 'var(--rv-radius-md)', border: '1px solid var(--rv-border-default)', marginBottom: '18px' }}>
+            <div className="rv-kicker" style={{ marginBottom: '6px' }}>Current Operational Stage</div>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px' }}>
+              <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--rv-text-primary)' }}>
+                {lead.stage}
+              </span>
               {renderNextStepAction()}
             </div>
           </div>
 
-          {/* Follow-up Scheduling Flow */}
-          <div className="rv-lead-drawer__section">
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
-              <span className="rv-lead-drawer__label">Next Follow-up Schedule</span>
-              <span className="rv-num" style={{ fontSize: '11px', color: 'var(--rv-status-callback-text)', fontWeight: 500 }}>
-                {lead.nextFollowUp}
-              </span>
+          {/* Service Request Context */}
+          <div className="rv-form-group">
+            <label className="rv-label">Service Request</label>
+            <div style={{ fontSize: '13.5px', fontWeight: 500, color: 'var(--rv-text-primary)' }}>
+              {lead.serviceTitle}
+            </div>
+          </div>
+
+          {/* Quote & Financials */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '16px' }}>
+            <div className="rv-form-group">
+              <label className="rv-label">Budget Range</label>
+              <div className="rv-num" style={{ fontSize: '13px', fontWeight: 600, color: 'var(--rv-text-secondary)' }}>
+                {lead.budget || 'To Quote'}
+              </div>
             </div>
 
-            <form onSubmit={handleScheduleSubmit} style={{ display: 'flex', gap: '8px', marginTop: '6px', flexWrap: 'wrap' }}>
+            <div className="rv-form-group">
+              <label className="rv-label">Prepared Quote Amount</label>
+              <div style={{ display: 'flex', gap: '6px' }}>
+                <input
+                  type="text"
+                  className="rv-input"
+                  value={quoteInput}
+                  onChange={(e) => setQuoteInput(e.target.value)}
+                  placeholder="₹8,500"
+                />
+                <Button variant="secondary" size="sm" onClick={handleQuoteSave}>
+                  Save
+                </Button>
+              </div>
+            </div>
+          </div>
+
+          {/* Follow-up Scheduler */}
+          <div style={{ background: 'var(--rv-bg-surface)', border: '1px solid var(--rv-border-subtle)', padding: '14px', borderRadius: 'var(--rv-radius-md)', marginBottom: '18px' }}>
+            <div className="rv-kicker" style={{ marginBottom: '8px' }}>Follow-up Schedule</div>
+            <form onSubmit={handleScheduleSubmit} style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
               <input
                 type="date"
-                className="rv-lead-note-input"
+                className="rv-input"
                 value={scheduleDate}
                 onChange={(e) => setScheduleDate(e.target.value)}
-                style={{ flex: 1, minWidth: '120px' }}
+                style={{ flex: '1 1 120px' }}
               />
               <input
                 type="time"
-                className="rv-lead-note-input"
+                className="rv-input"
                 value={scheduleTime}
                 onChange={(e) => setScheduleTime(e.target.value)}
-                style={{ width: '90px' }}
+                style={{ flex: '1 1 90px' }}
               />
               <Button type="submit" variant="secondary" size="sm">
-                Schedule
+                Update Follow-up
               </Button>
             </form>
           </div>
 
-          {/* Quote Status & Budget Breakdown */}
-          <div className="rv-lead-drawer__section">
-            <span className="rv-lead-drawer__label">Service Quote Details</span>
-            <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--rv-text-primary)', marginTop: '4px' }}>
-              {lead.serviceTitle}
-            </div>
+          {/* Internal Notes History */}
+          <div>
+            <div className="rv-kicker" style={{ marginBottom: '8px' }}>Internal Notes & History</div>
 
-            <div style={{ marginTop: '8px', display: 'flex', flexDirection: 'column', gap: '6px', fontSize: '12px' }}>
-              <div>
-                <span className="rv-text-muted">Target Budget: </span>
-                <strong className="rv-num">{lead.budget}</strong>
-              </div>
-              <div>
-                <span className="rv-text-muted">Quote Status: </span>
-                <span className="rv-num" style={{ color: 'var(--rv-text-primary)' }}>{lead.quoteStatus || 'Not Sent'}</span>
-              </div>
-            </div>
-
-            {/* Quick Quote Editor */}
-            <div style={{ marginTop: '8px', display: 'flex', gap: '8px', alignItems: 'center' }}>
+            <form onSubmit={handleAddNoteSubmit} style={{ display: 'flex', gap: '8px', marginBottom: '14px' }}>
               <input
                 type="text"
-                className="rv-lead-note-input"
-                placeholder="Enter quote amount (e.g. ₹48,000)"
-                value={quoteInput}
-                onChange={(e) => setQuoteInput(e.target.value)}
-              />
-              <Button variant="secondary" size="sm" onClick={handleQuoteSave}>
-                Save Quote
-              </Button>
-            </div>
-          </div>
-
-          {/* Contact Details */}
-          <div className="rv-lead-drawer__section">
-            <span className="rv-lead-drawer__label">Customer Contact</span>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', marginTop: '6px', fontSize: '13px' }}>
-              <div>
-                <span className="rv-text-muted">Phone: </span>
-                <strong className="rv-num">{lead.customerPhone}</strong>
-              </div>
-              <div>
-                <span className="rv-text-muted">Email: </span>
-                <span>{lead.customerEmail}</span>
-              </div>
-              <div>
-                <span className="rv-text-muted">Assigned Owner: </span>
-                <span>{lead.assignee}</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Pipeline Stage Switcher */}
-          <div className="rv-lead-drawer__section">
-            <span className="rv-lead-drawer__label">Override Pipeline Stage</span>
-            <div className="rv-stage-selector" style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginTop: '8px' }}>
-              {STAGES.map((st) => (
-                <button
-                  key={st}
-                  className={`rv-stage-pill ${lead.stage === st ? 'rv-stage-pill--active' : ''}`}
-                  onClick={() => onUpdateStage(lead.id, st)}
-                >
-                  {st}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Activity & Notes Log */}
-          <div className="rv-lead-drawer__section" style={{ borderBottom: 'none' }}>
-            <span className="rv-lead-drawer__label">Activity & Internal Notes ({lead.notes.length})</span>
-
-            {/* Quick Add Note Input */}
-            <form onSubmit={handleAddNoteSubmit} style={{ marginTop: '8px', display: 'flex', gap: '8px' }}>
-              <input
-                type="text"
-                className="rv-lead-note-input"
+                className="rv-input"
                 placeholder="Log internal note or call summary..."
                 value={noteInput}
                 onChange={(e) => setNoteInput(e.target.value)}
               />
               <Button type="submit" variant="primary" size="sm">
-                Add
+                Add Note
               </Button>
             </form>
 
-            {/* Notes List */}
-            <div style={{ marginTop: '12px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              {lead.notes.map((n) => (
-                <div key={n.id} className="rv-lead-note-card">
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', color: 'var(--rv-text-muted)', marginBottom: '2px' }}>
-                    <strong style={{ color: 'var(--rv-text-secondary)' }}>{n.author}</strong>
-                    <span className="rv-num">{n.timestamp}</span>
+            <div className="rv-timeline">
+              {lead.notes && lead.notes.length > 0 ? (
+                lead.notes.map((note) => (
+                  <div key={note.id} className="rv-timeline-item">
+                    <div className="rv-timeline-dot" />
+                    <div className="rv-timeline-content">
+                      <div className="rv-timeline-title">
+                        {note.author}
+                      </div>
+                      <div className="rv-timeline-desc">
+                        {note.text}
+                      </div>
+                      <div className="rv-timeline-time">
+                        {note.timestamp}
+                      </div>
+                    </div>
                   </div>
-                  <div style={{ fontSize: '12px', color: 'var(--rv-text-primary)' }}>
-                    {n.text}
-                  </div>
+                ))
+              ) : (
+                <div style={{ fontSize: '12px', color: 'var(--rv-text-muted)', padding: '8px 0' }}>
+                  No internal notes logged for this lead yet.
                 </div>
-              ))}
+              )}
             </div>
           </div>
         </div>
-      </div>
+      </aside>
     </div>
   );
 };

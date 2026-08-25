@@ -1,7 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { Job, JobStatus, SimulationMode } from '../../types/rivet';
+import { Job, JobStatus } from '../../types/rivet';
 import { PageHeader } from '../ui/PageHeader';
-import { Card } from '../ui/Card';
 import { Button } from '../ui/Button';
 import { EmptyState } from '../ui/EmptyState';
 import { SkeletonRow } from '../ui/Skeleton';
@@ -16,14 +15,17 @@ export const JobsView: React.FC = () => {
   const actor = { id: user?.id, name: user?.fullName, workspaceId: user?.workspaceId };
 
   const [jobs, setJobs] = useState<Job[]>([]);
+  const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<'All' | JobStatus>('All');
   const [selectedJob, setSelectedJob] = useState<Job | null>(null);
-  const [simMode, setSimMode] = useState<SimulationMode>('normal');
   const [isNewJobModalOpen, setIsNewJobModalOpen] = useState(false);
 
   useEffect(() => {
-    ApiService.getJobs(user?.workspaceId).then(setJobs);
+    setLoading(true);
+    ApiService.getJobs(user?.workspaceId)
+      .then(setJobs)
+      .finally(() => setLoading(false));
   }, [user?.workspaceId]);
 
   // Filter jobs by search query and status filter
@@ -104,178 +106,92 @@ export const JobsView: React.FC = () => {
 
   return (
     <div>
-      {/* Page Header */}
       <PageHeader
-        title="Jobs & Dispatch Work Orders"
-        subline="Janai Tours & Service Ops • Confirmed work dispatches, driver assignment, & service delivery"
-        simMode={simMode}
-        onSimModeChange={setSimMode}
-      />
-
-      {/* Top Counters Strip for Jobs V2 */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '10px', marginBottom: '16px' }}>
-        <div style={{ background: 'var(--rv-bg-surface)', border: '1px solid var(--rv-border-default)', padding: '10px 14px', borderRadius: '6px' }}>
-          <div style={{ fontSize: '10px', color: 'var(--rv-text-muted)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-            Total Work Orders
-          </div>
-          <div className="rv-num" style={{ fontSize: '18px', fontWeight: 700, color: 'var(--rv-text-primary)', marginTop: '2px' }}>
-            {jobs.length}
-          </div>
-        </div>
-
-        <div style={{ background: 'var(--rv-bg-surface)', border: '1px solid var(--rv-border-default)', padding: '10px 14px', borderRadius: '6px' }}>
-          <div style={{ fontSize: '10px', color: 'var(--rv-text-muted)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-            Scheduled
-          </div>
-          <div className="rv-num" style={{ fontSize: '18px', fontWeight: 700, color: 'var(--rv-status-callback-text)', marginTop: '2px' }}>
-            {getStatusCount('Scheduled')}
-          </div>
-        </div>
-
-        <div style={{ background: 'var(--rv-bg-surface)', border: '1px solid var(--rv-border-default)', padding: '10px 14px', borderRadius: '6px' }}>
-          <div style={{ fontSize: '10px', color: 'var(--rv-text-muted)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-            In Progress
-          </div>
-          <div className="rv-num" style={{ fontSize: '18px', fontWeight: 700, color: 'var(--rv-status-job-text)', marginTop: '2px' }}>
-            {getStatusCount('In Progress')}
-          </div>
-        </div>
-
-        <div style={{ background: 'var(--rv-bg-surface)', border: '1px solid var(--rv-border-default)', padding: '10px 14px', borderRadius: '6px' }}>
-          <div style={{ fontSize: '10px', color: 'var(--rv-text-muted)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-            Completed
-          </div>
-          <div className="rv-num" style={{ fontSize: '18px', fontWeight: 700, color: 'var(--rv-status-completed-text)', marginTop: '2px' }}>
-            {getStatusCount('Completed')}
-          </div>
-        </div>
-
-        <div style={{ background: 'var(--rv-bg-surface)', border: '1px solid var(--rv-border-default)', padding: '10px 14px', borderRadius: '6px' }}>
-          <div style={{ fontSize: '10px', color: 'var(--rv-text-muted)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-            Cancelled
-          </div>
-          <div className="rv-num" style={{ fontSize: '18px', fontWeight: 700, color: 'var(--rv-status-overdue-text)', marginTop: '2px' }}>
-            {getStatusCount('Cancelled')}
-          </div>
-        </div>
-      </div>
-
-      {/* Exception & Dispatch Alert Area */}
-      {getStatusCount('Scheduled') > 0 && (
-        <div
-          style={{
-            background: 'var(--rv-bg-surface-elevated)',
-            border: '1px solid var(--rv-status-callback-border)',
-            borderLeft: '3px solid var(--rv-status-callback-text)',
-            padding: '10px 14px',
-            borderRadius: '6px',
-            marginBottom: '16px',
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            flexWrap: 'wrap',
-            gap: '8px',
-          }}
-        >
-          <div style={{ fontSize: '12px' }}>
-            <strong style={{ color: 'var(--rv-status-callback-text)' }}>⚡ Active Dispatch Alert:</strong>{' '}
-            <span style={{ color: 'var(--rv-text-primary)' }}>
-              {getStatusCount('Scheduled')} vehicle dispatches awaiting departure confirmation for today's pickup schedule.
-            </span>
-          </div>
-          <span style={{ fontSize: '11px', color: 'var(--rv-text-muted)', fontWeight: 600 }}>
-            Desk Operator: Central HQ Dispatch
-          </span>
-        </div>
-      )}
-
-      {/* Main Jobs Control Card */}
-      <Card dense className="rv-card--hero">
-        {/* Search & Filter Bar with New Job Button */}
-        <div className="rv-leads-bar" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flex: 1 }}>
-            {/* Search Input */}
-            <div className="rv-search-wrapper" style={{ flex: 1 }}>
-              <span className="rv-search-icon">🔍</span>
-              <input
-                type="text"
-                className="rv-search-input"
-                placeholder="Search work order #, customer, driver, vehicle, or route..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-              />
-              {searchQuery && (
-                <button
-                  className="rv-search-clear"
-                  onClick={() => setSearchQuery('')}
-                  title="Clear search"
-                >
-                  ✕
-                </button>
-              )}
-            </div>
-
-            {/* Status Filter Tabs */}
-            <div className="rv-queue-tabs" role="tablist" aria-label="Filter jobs by status">
-              {STATUS_FILTERS.map((st) => (
-                <button
-                  key={st}
-                  className={`rv-queue-tab ${statusFilter === st ? 'rv-queue-tab--active' : ''}`}
-                  onClick={() => setStatusFilter(st)}
-                  role="tab"
-                  aria-selected={statusFilter === st}
-                >
-                  <span>{st}</span>
-                  <span className="rv-queue-tab__count rv-num">{getStatusCount(st)}</span>
-                </button>
-              ))}
-            </div>
-          </div>
-
+        kicker="Dispatch Operations"
+        title="Dispatch Jobs"
+        subline="Active vehicle dispatches, driver assignments, route coordination, and live progress"
+        action={
           <Button
             variant="primary"
-            size="sm"
-            onClick={() => {
-              if (!can('job:create')) {
-                alert(`Role "${user?.role}" cannot create dispatch work orders. Contact Operations or Admin.`);
-                return;
-              }
-              setIsNewJobModalOpen(true);
-            }}
-            disabled={!can('job:create')}
-            title={!can('job:create') ? `Role (${user?.role}) restricted from creating jobs` : 'Create new work order'}
-            style={{ opacity: can('job:create') ? 1 : 0.6 }}
+            size="md"
+            onClick={() => setIsNewJobModalOpen(true)}
           >
-            + New Work Order
+            + Create Dispatch Job
           </Button>
+        }
+      />
+
+      <div className="rv-table-container">
+        <div className="rv-table-header">
+          {/* Status Filter Tabs */}
+          <div className="rv-queue-tabs" role="tablist" aria-label="Filter dispatch jobs by status">
+            {STATUS_FILTERS.map((st) => {
+              const count = getStatusCount(st);
+              const isActive = statusFilter === st;
+              return (
+                <button
+                  key={st}
+                  className={`rv-queue-tab ${isActive ? 'rv-queue-tab--active' : ''}`}
+                  onClick={() => setStatusFilter(st)}
+                  role="tab"
+                  aria-selected={isActive}
+                >
+                  <span>{st}</span>
+                  <span className="rv-queue-tab__count rv-num">{count}</span>
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Search Input */}
+          <div className="rv-search-bar">
+            <span style={{ color: 'var(--rv-text-muted)', fontSize: '13px' }}>🔍</span>
+            <input
+              type="text"
+              placeholder="Search job code, driver, route..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+          </div>
         </div>
 
-        {/* Jobs List / Table */}
-        {simMode === 'loading' ? (
-          <div>
+        {/* Job List Rows */}
+        {loading ? (
+          <div style={{ padding: '16px' }}>
             <SkeletonRow />
             <SkeletonRow />
             <SkeletonRow />
           </div>
-        ) : simMode === 'empty' || filteredJobs.length === 0 ? (
+        ) : filteredJobs.length === 0 ? (
           <EmptyState
             icon="🚚"
-            title="No work orders match your filter"
-            description="Try clearing your search query, selecting a different status tab, or create a new work order."
+            title={jobs.length === 0 ? "No Active Dispatch Jobs" : "No Matching Jobs Found"}
+            description={
+              jobs.length === 0
+                ? "No dispatch jobs scheduled yet. Create your first vehicle work order or confirm an incoming customer lead."
+                : "No jobs match your search or status filter. Try clearing filters."
+            }
+            action={
+              jobs.length === 0 && (
+                <Button variant="primary" size="md" onClick={() => setIsNewJobModalOpen(true)}>
+                  + Schedule First Dispatch
+                </Button>
+              )
+            }
           />
         ) : (
-          <ul className="rv-queue-list" role="list" style={{ background: 'transparent' }}>
+          <div className="rv-list-group">
             {filteredJobs.map((job) => (
               <JobRow
                 key={job.id}
                 job={job}
-                onSelect={(selected) => setSelectedJob(selected)}
-                onQuickAction={(targetJob) => handleQuickAction(targetJob)}
+                onSelect={setSelectedJob}
+                onQuickAction={handleQuickAction}
               />
             ))}
-          </ul>
+          </div>
         )}
-      </Card>
+      </div>
 
       {/* Job Detail Drawer */}
       <JobDetailDrawer
@@ -289,7 +205,10 @@ export const JobsView: React.FC = () => {
       <NewJobModal
         isOpen={isNewJobModalOpen}
         onClose={() => setIsNewJobModalOpen(false)}
-        onJobCreated={(updatedJobs) => setJobs(updatedJobs)}
+        onJobCreated={(newJobs) => {
+          setJobs(newJobs);
+          setSelectedJob(newJobs[0] || null);
+        }}
       />
     </div>
   );

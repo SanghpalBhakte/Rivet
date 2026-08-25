@@ -25,55 +25,57 @@ export const CustomerRow: React.FC<CustomerRowProps> = ({
   };
 
   const formatRupees = (amt: number) => `₹${amt.toLocaleString('en-IN')}`;
+  const hasBalance = customer.outstandingBalance > 0;
 
   return (
-    <li
-      className="rv-queue-item rv-customer-row"
+    <div
+      className="rv-list-row"
       onClick={() => onSelect(customer)}
-      style={{ cursor: 'pointer' }}
+      role="row"
     >
-      {/* Customer Record Info */}
-      <div className="rv-queue-item__main">
-        <div className="rv-queue-item__meta-row">
+      <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: '3px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
           <Badge variant={getBadgeVariant(customer.healthStatus)}>
-            {customer.healthStatus.toUpperCase()}
+            {customer.healthStatus}
           </Badge>
-          <span className="rv-tabular" style={{ fontSize: '11px', color: 'var(--rv-text-muted)', fontWeight: 600 }}>
+          <span className="rv-mono rv-num" style={{ fontSize: '11px', color: 'var(--rv-brand)', fontWeight: 600 }}>
             {customer.customerCode}
           </span>
-          <span className="rv-queue-item__client">{customer.name}</span>
-          <span className="rv-queue-item__phone rv-tabular">{customer.phone}</span>
+          <span style={{ fontSize: '12.5px', fontWeight: 600, color: 'var(--rv-text-primary)' }}>
+            {customer.name}
+          </span>
+          <span className="rv-mono rv-num" style={{ fontSize: '11px', color: 'var(--rv-text-muted)' }}>
+            {customer.phone}
+          </span>
+          <span style={{ fontSize: '11px', color: 'var(--rv-text-dim)' }}>•</span>
+          <span style={{ fontSize: '11px', color: 'var(--rv-text-muted)' }}>{customer.city}</span>
         </div>
 
-        <h4 className="rv-queue-item__title" style={{ fontWeight: 600, color: 'var(--rv-text-primary)' }}>
-          {customer.latestServiceRef}
-        </h4>
+        <div style={{ fontSize: '13px', fontWeight: 500, color: 'var(--rv-text-primary)' }}>
+          {customer.latestServiceRef || 'Active Account'}
+        </div>
 
-        {/* Financial & Activity Context */}
-        <div className="rv-queue-item__context" style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
-          <span>City: <strong style={{ color: 'var(--rv-text-secondary)' }}>{customer.city}</strong></span>
-          <span>• Lifetime Value: <span className="rv-num">{formatRupees(customer.totalSpent)}</span></span>
+        {/* Spend & Balance */}
+        <div style={{ display: 'flex', gap: '14px', fontSize: '11.5px', color: 'var(--rv-text-muted)', flexWrap: 'wrap' }}>
+          <span>Lifetime Value: <strong className="rv-num" style={{ color: 'var(--rv-text-secondary)' }}>{formatRupees(customer.totalSpent)}</strong></span>
           <span>
-            • Outstanding Balance:{' '}
+            Outstanding:{' '}
             <strong
               className="rv-num"
               style={{
-                color: customer.outstandingBalance > 0 ? 'var(--rv-status-overdue-text)' : 'var(--rv-status-completed-text)',
+                color: hasBalance ? 'var(--rv-status-overdue-text)' : 'var(--rv-status-completed-text)',
               }}
             >
-              {customer.outstandingBalance > 0 ? formatRupees(customer.outstandingBalance) : 'Settled ₹0'}
+              {hasBalance ? formatRupees(customer.outstandingBalance) : 'Settled ₹0'}
             </strong>
           </span>
         </div>
       </div>
 
-      {/* Last Activity & Action CTA */}
-      <div className="rv-queue-item__right">
-        <div className="rv-queue-item__due">
-          <div style={{ fontSize: '10px', color: 'var(--rv-text-muted)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-            Last Contact
-          </div>
-          <div className="rv-tabular" style={{ fontWeight: 500 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexShrink: 0 }}>
+        <div style={{ textAlign: 'right' }}>
+          <div className="rv-kicker" style={{ fontSize: '10px' }}>Last Active</div>
+          <div className="rv-num" style={{ fontSize: '12px', fontWeight: 500, color: 'var(--rv-text-secondary)' }}>
             {customer.lastActivityDate}
           </div>
         </div>
@@ -86,9 +88,9 @@ export const CustomerRow: React.FC<CustomerRowProps> = ({
             onQuickAction(customer, e);
           }}
         >
-          View Timeline
+          Open Hub
         </Button>
       </div>
-    </li>
+    </div>
   );
 };

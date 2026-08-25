@@ -16,13 +16,13 @@ export const AppLoadingShell: React.FC<AppLoadingShellProps> = ({
     <div
       style={{
         minHeight: '100vh',
-        backgroundColor: '#0b0d10',
+        backgroundColor: '#0d0f12',
         color: '#f1f5f9',
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
         justifyContent: 'center',
-        fontFamily: 'Inter, system-ui, -apple-system, sans-serif',
+        fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, sans-serif",
         padding: '24px',
         boxSizing: 'border-box',
       }}
@@ -31,27 +31,27 @@ export const AppLoadingShell: React.FC<AppLoadingShellProps> = ({
       <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '24px' }}>
         <div
           style={{
-            width: '36px',
-            height: '36px',
-            borderRadius: '8px',
-            backgroundColor: '#2563eb',
+            width: '32px',
+            height: '32px',
+            borderRadius: '6px',
+            backgroundColor: 'rgba(94, 234, 212, 0.1)',
+            border: '1px solid rgba(94, 234, 212, 0.25)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            fontWeight: 800,
-            fontSize: '18px',
-            color: '#ffffff',
-            boxShadow: '0 0 20px rgba(37, 99, 235, 0.4)',
+            fontWeight: 700,
+            fontSize: '15px',
+            color: '#5eead4',
           }}
         >
-          R
+          ⚡
         </div>
         <div>
-          <div style={{ fontSize: '18px', fontWeight: 700, letterSpacing: '0.05em', color: '#f8fafc' }}>
+          <div style={{ fontSize: '16px', fontWeight: 700, letterSpacing: '0.08em', color: '#f1f5f9' }}>
             RIVET
           </div>
-          <div style={{ fontSize: '11px', color: '#94a3b8' }}>
-            Operations Control Room • Janai Central
+          <div style={{ fontSize: '11px', color: '#64748b' }}>
+            Operations Control Room
           </div>
         </div>
       </div>
@@ -60,27 +60,27 @@ export const AppLoadingShell: React.FC<AppLoadingShellProps> = ({
       <div
         style={{
           width: '100%',
-          maxWidth: '440px',
-          backgroundColor: '#161b22',
-          border: '1px solid #30363d',
+          maxWidth: '420px',
+          backgroundColor: '#14171d',
+          border: '1px solid #1c212b',
           borderRadius: '10px',
           padding: '24px',
-          boxShadow: '0 10px 30px rgba(0,0,0,0.5)',
+          boxShadow: '0 8px 30px rgba(0,0,0,0.4)',
           textAlign: 'center',
         }}
       >
         {errorMsg ? (
           /* Recoverable Error State */
           <div>
-            <div style={{ fontSize: '28px', marginBottom: '12px' }}>⚠️</div>
-            <h2 style={{ margin: '0 0 8px', fontSize: '16px', fontWeight: 700, color: '#f8fafc' }}>
-              Control Room Bootstrap Warning
+            <div style={{ fontSize: '24px', marginBottom: '10px' }}>⚠️</div>
+            <h2 style={{ margin: '0 0 6px', fontSize: '15px', fontWeight: 600, color: '#f1f5f9' }}>
+              Connection Interrupted
             </h2>
-            <p style={{ margin: '0 0 20px', fontSize: '13px', color: '#94a3b8', lineHeight: 1.5 }}>
+            <p style={{ margin: '0 0 18px', fontSize: '12.5px', color: '#94a3b8', lineHeight: 1.5 }}>
               {errorMsg}
             </p>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
               {onRetry && (
                 <Button variant="primary" size="md" onClick={onRetry} style={{ width: '100%' }}>
                   🔄 Retry Connection
@@ -98,20 +98,20 @@ export const AppLoadingShell: React.FC<AppLoadingShellProps> = ({
           <div>
             <div
               style={{
-                width: '40px',
-                height: '40px',
+                width: '32px',
+                height: '32px',
                 margin: '0 auto 16px',
-                border: '3px solid #30363d',
-                borderTopColor: '#2563eb',
+                border: '2.5px solid #1c212b',
+                borderTopColor: '#5eead4',
                 borderRadius: '50%',
                 animation: 'rv-spin 0.8s linear infinite',
               }}
             />
-            <h2 style={{ margin: '0 0 6px', fontSize: '15px', fontWeight: 600, color: '#f8fafc' }}>
-              Initializing Control Room Session
+            <h2 style={{ margin: '0 0 4px', fontSize: '14.5px', fontWeight: 600, color: '#f1f5f9' }}>
+              Initializing Control Room
             </h2>
             <p style={{ margin: 0, fontSize: '12px', color: '#64748b' }}>
-              Resolving workspace membership & operational telemetry...
+              Restoring workspace membership & operational telemetry...
             </p>
           </div>
         )}

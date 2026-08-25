@@ -5,7 +5,6 @@ import { TodayQueue } from './TodayQueue';
 import { TodayReminders } from './TodayReminders';
 import { SummaryColumn } from './SummaryColumn';
 import { RecentActivity } from './RecentActivity';
-import { Button } from '../ui/Button';
 import { Card } from '../ui/Card';
 import { ApiService, ActivityLogEntry, DEV_WORKSPACE_ID } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
@@ -13,9 +12,6 @@ import { useAuth } from '../../context/AuthContext';
 export const DashboardView: React.FC = () => {
   const { user } = useAuth();
   const workspaceId = user?.workspaceId || DEV_WORKSPACE_ID;
-
-  const [simMode, setSimMode] = useState<SimulationMode>('normal');
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   // Live DB state
   const [metrics, setMetrics] = useState<Array<{
@@ -31,7 +27,7 @@ export const DashboardView: React.FC = () => {
     Promise.all([
       ApiService.getDashboardMetrics(workspaceId),
       ApiService.getActivityLog(workspaceId, undefined, 12),
-      ApiService.getTasks(),
+      ApiService.getTasks(workspaceId),
     ])
       .then(([dashboard, activity, liveTasks]) => {
         setMetrics(dashboard.metrics);
@@ -62,23 +58,9 @@ export const DashboardView: React.FC = () => {
     }));
 
   const handleActionComplete = (id: string) => {
-    ApiService.updateTaskStatus(id, 'Done')
+    ApiService.updateTaskStatus(id, 'Done', { id: user?.id, name: user?.fullName, workspaceId })
       .then((updated) => setTasks(updated))
       .catch(console.error);
-  };
-
-  const handleResetData = () => {
-    setSimMode('normal');
-    setErrorMessage(null);
-  };
-
-  const handleSimModeChange = (mode: SimulationMode) => {
-    setSimMode(mode);
-    if (mode === 'error') {
-      setErrorMessage('Network connection lost to Janai local server. Retrying background sync...');
-    } else {
-      setErrorMessage(null);
-    }
   };
 
   const isNewWorkspace = !loading && tasks.length === 0 && recentActivity.length === 0;
@@ -86,109 +68,102 @@ export const DashboardView: React.FC = () => {
   return (
     <div>
       <PageHeader
-        title="Operations Control Room"
-        subline="Janai Ops • Live dispatch, follow-up queues & performance signals"
-        simMode={simMode}
-        onSimModeChange={handleSimModeChange}
+        kicker="Operations Hub"
+        title="Control Room"
+        subline="Real-time dispatch status, follow-up priority queue, and pipeline telemetry"
       />
 
-      {(simMode === 'error' || errorMessage) && (
-        <div className="rv-error-banner" role="alert" style={{ marginBottom: '20px' }}>
-          <div>
-            <strong>⚠️ System Sync Warning:</strong> {errorMessage || 'Could not fetch live operations data.'}
-          </div>
-          <Button variant="secondary" size="sm" onClick={handleResetData}>
-            Retry Sync
-          </Button>
-        </div>
-      )}
-
-      {/* New Workspace Onboarding Banner */}
+      {/* New Workspace Onboarding Guidance */}
       {isNewWorkspace && (
         <div
           style={{
-            background: 'var(--rv-bg-surface-elevated)',
+            background: 'var(--rv-bg-surface)',
             border: '1px solid var(--rv-brand-border)',
             borderLeft: '4px solid var(--rv-brand)',
-            borderRadius: '8px',
-            padding: '16px 20px',
-            marginBottom: '20px',
+            borderRadius: 'var(--rv-radius-lg)',
+            padding: '18px 22px',
+            marginBottom: '24px',
           }}
         >
-          <div style={{ fontSize: '15px', fontWeight: 700, color: 'var(--rv-text-primary)', marginBottom: '4px' }}>
-            👋 Welcome to your Rivet Control Room
+          <div style={{ fontSize: '14.5px', fontWeight: 600, color: 'var(--rv-text-primary)', marginBottom: '4px' }}>
+            Workspace Ready for Operations
           </div>
-          <p style={{ margin: '0 0 12px', fontSize: '13px', color: 'var(--rv-text-secondary)', lineHeight: 1.5 }}>
-            Your workspace is ready for real operations. Register incoming service leads, schedule dispatch jobs, or track client billing.
+          <p style={{ margin: '0 0 14px', fontSize: '12.5px', color: 'var(--rv-text-secondary)', lineHeight: 1.5 }}>
+            Your operational database is connected. Capture incoming leads, schedule dispatch jobs, or track client payment balances.
           </p>
-          <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
-            <span style={{ fontSize: '12px', color: 'var(--rv-text-muted)', alignSelf: 'center' }}>
-              Quick Onboarding Triggers:
+          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+            <span className="rv-kicker" style={{ alignSelf: 'center', marginRight: '6px' }}>
+              Quick Actions:
             </span>
-            <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--rv-brand)' }}>
-              Use the sidebar to create Leads, Dispatches, or Tasks.
+            <span style={{ fontSize: '12px', color: 'var(--rv-brand)', fontWeight: 500 }}>
+              Use the sidebar to create your first Inquiry Quote or Dispatch Job.
             </span>
           </div>
         </div>
       )}
 
-      {/* Live KPI Metrics Bar */}
-      <div className="rv-metrics-grid" style={{ marginBottom: '20px' }}>
+      {/* Unified Telemetry KPI Bar */}
+      <div className="rv-telemetry-bar">
         {loading
           ? [1, 2, 3, 4].map((i) => (
-              <div key={i} className="rv-metric-card">
-                <div className="rv-skeleton" style={{ width: '40px', height: '28px', marginBottom: '6px' }} />
-                <div className="rv-skeleton" style={{ width: '80%', height: '11px', marginBottom: '4px' }} />
-                <div className="rv-skeleton" style={{ width: '60%', height: '10px' }} />
+              <div key={i} className="rv-telemetry-item">
+                <div className="rv-skeleton" style={{ width: '45px', height: '24px', marginBottom: '6px' }} />
+                <div className="rv-skeleton" style={{ width: '75%', height: '11px', marginBottom: '4px' }} />
+                <div className="rv-skeleton" style={{ width: '55%', height: '10px' }} />
               </div>
             ))
           : metrics.map((m) => (
-              <div key={m.id} className={`rv-metric-card ${m.urgent ? 'rv-metric-card--urgent' : ''}`}>
-                <div className="rv-metric-card__value rv-num">
-                  {simMode === 'empty' ? 0 : m.value}
+              <div key={m.id} className={`rv-telemetry-item ${m.urgent ? 'rv-telemetry-item--urgent' : ''}`}>
+                <div className="rv-telemetry-item__value rv-num">
+                  {m.value}
                 </div>
-                <div className="rv-metric-card__label">{m.label}</div>
-                <div className="rv-metric-card__subtext">{m.subtext}</div>
+                <div className="rv-telemetry-item__label">{m.label}</div>
+                <div className="rv-telemetry-item__subtext">{m.subtext}</div>
               </div>
             ))}
       </div>
 
-      {/* Two-Column Operations Grid */}
+      {/* Two-Column Operations Layout */}
       <div className="rv-dashboard-grid">
+        {/* Left Column: Action Priority Queues */}
         <section aria-label="Today's Operational Actions" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
           <TodayQueue
             items={queueItems}
             onActionComplete={handleActionComplete}
-            simMode={simMode}
+            simMode="normal"
           />
-          <TodayReminders tasks={tasks} simMode={simMode} />
+          <TodayReminders tasks={tasks} simMode="normal" />
         </section>
 
-        <aside aria-label="Pipeline & Activity Intelligence" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+        {/* Right Column: Pipeline & Activity Timeline */}
+        <aside aria-label="Pipeline & Activity Timeline" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
           <SummaryColumn
             stages={pipelineStages}
-            simMode={loading ? 'loading' : simMode}
+            simMode={loading ? 'loading' : 'normal'}
           />
 
           <RecentActivity
             activities={recentActivity}
-            simMode={loading ? 'loading' : simMode}
+            simMode={loading ? 'loading' : 'normal'}
           />
 
-          {/* Ops Quick Links */}
-          <Card title="Desk Shortcuts" subtitle="Standard operational triggers" dense>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+          {/* Desk Operational Status */}
+          <Card title="Desk Connectivity" subtitle="Service infrastructure signals" dense>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '12px' }}>
-                <span style={{ color: 'var(--rv-text-secondary)' }}>System Status</span>
-                <span style={{ color: 'var(--rv-status-job-text)', fontWeight: 600 }}>Active • 100%</span>
+                <span style={{ color: 'var(--rv-text-muted)' }}>Database Sync</span>
+                <span style={{ color: 'var(--rv-status-completed-text)', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '5px' }}>
+                  <span className="rv-status-dot" style={{ width: '5px', height: '5px' }} />
+                  Operational
+                </span>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '12px' }}>
-                <span style={{ color: 'var(--rv-text-secondary)' }}>Primary Channel</span>
-                <span style={{ color: 'var(--rv-text-primary)' }}>WhatsApp Intake</span>
+                <span style={{ color: 'var(--rv-text-muted)' }}>Primary Intake</span>
+                <span style={{ color: 'var(--rv-text-primary)' }}>WhatsApp + Webhook</span>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '12px' }}>
-                <span style={{ color: 'var(--rv-text-secondary)' }}>Assigned Desk</span>
-                <span style={{ color: 'var(--rv-text-primary)' }}>Janai Central</span>
+                <span style={{ color: 'var(--rv-text-muted)' }}>Operations Node</span>
+                <span className="rv-mono" style={{ color: 'var(--rv-text-secondary)', fontSize: '11px' }}>Central-HQ-01</span>
               </div>
             </div>
           </Card>

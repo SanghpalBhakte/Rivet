@@ -87,183 +87,168 @@ export const NewJobModal: React.FC<NewJobModalProps> = ({
   };
 
   return (
-    <div className="rv-modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="new-job-modal-title">
-      <div className="rv-modal-card" style={{ maxWidth: '560px' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+    <div className="rv-modal-overlay" onClick={onClose}>
+      <div
+        className="rv-modal"
+        style={{ maxWidth: '540px' }}
+        onClick={(e) => e.stopPropagation()}
+        role="dialog"
+        aria-label="Create Dispatch Job"
+      >
+        <div className="rv-modal__header">
           <div>
-            <h2 id="new-job-modal-title" style={{ margin: 0, fontSize: '18px', fontWeight: 700, color: 'var(--rv-text-primary)' }}>
-              Create Work Order / Dispatch Job
-            </h2>
-            <p style={{ margin: '4px 0 0', fontSize: '12px', color: 'var(--rv-text-muted)' }}>
-              Janai Ops • Register confirmed service dispatch order into Supabase
-            </p>
+            <span className="rv-kicker">Dispatch Manifest</span>
+            <h3 style={{ margin: '2px 0 0', fontSize: '15px', fontWeight: 600, color: 'var(--rv-text-primary)' }}>
+              Create Work Order
+            </h3>
           </div>
-          <button className="rv-search-clear" onClick={onClose} title="Close modal">✕</button>
+          <Button variant="ghost" size="sm" onClick={onClose} aria-label="Close modal">
+            ✕
+          </Button>
         </div>
 
-        {errorMsg && (
-          <div className="rv-error-banner" style={{ marginBottom: '12px' }}>
-            ⚠️ {errorMsg}
-          </div>
-        )}
+        <form onSubmit={handleSubmit}>
+          <div className="rv-modal__body">
+            {errorMsg && (
+              <div style={{ background: 'rgba(251, 191, 36, 0.08)', border: '1px solid rgba(251, 191, 36, 0.25)', color: 'var(--rv-status-overdue-text)', padding: '8px 12px', borderRadius: '6px', fontSize: '12px', marginBottom: '14px' }}>
+                ⚠️ {errorMsg}
+              </div>
+            )}
 
-        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
-            <div>
-              <label style={{ display: 'block', fontSize: '11px', fontWeight: 600, color: 'var(--rv-text-muted)', marginBottom: '4px' }}>
-                Customer Name *
-              </label>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '12px' }}>
+              <div className="rv-form-group" style={{ margin: 0 }}>
+                <label className="rv-label">Customer Name *</label>
+                <input
+                  type="text"
+                  className="rv-input"
+                  placeholder="Rajesh Sharma"
+                  required
+                  value={customerName}
+                  onChange={(e) => setCustomerName(e.target.value)}
+                />
+              </div>
+
+              <div className="rv-form-group" style={{ margin: 0 }}>
+                <label className="rv-label">Phone / WhatsApp *</label>
+                <input
+                  type="tel"
+                  className="rv-input"
+                  placeholder="+91 98220 12345"
+                  required
+                  value={customerPhone}
+                  onChange={(e) => setCustomerPhone(e.target.value)}
+                />
+              </div>
+            </div>
+
+            <div className="rv-form-group">
+              <label className="rv-label">Service Description *</label>
               <input
                 type="text"
-                className="rv-search-input"
-                style={{ width: '100%', boxSizing: 'border-box' }}
-                placeholder="e.g. Rajesh Sharma"
-                value={customerName}
-                onChange={(e) => setCustomerName(e.target.value)}
+                className="rv-input"
+                placeholder="Airport Express Pickup (Ertiga / Innova)"
                 required
+                value={serviceTitle}
+                onChange={(e) => setServiceTitle(e.target.value)}
               />
             </div>
-            <div>
-              <label style={{ display: 'block', fontSize: '11px', fontWeight: 600, color: 'var(--rv-text-muted)', marginBottom: '4px' }}>
-                Customer Phone *
-              </label>
+
+            <div className="rv-form-group">
+              <label className="rv-label">Scheduled Date & Time *</label>
               <input
                 type="text"
-                className="rv-search-input"
-                style={{ width: '100%', boxSizing: 'border-box' }}
-                placeholder="e.g. +91 98220 12345"
-                value={customerPhone}
-                onChange={(e) => setCustomerPhone(e.target.value)}
+                className="rv-input"
+                placeholder="Today, 4:30 PM"
                 required
-              />
-            </div>
-          </div>
-
-          <div>
-            <label style={{ display: 'block', fontSize: '11px', fontWeight: 600, color: 'var(--rv-text-muted)', marginBottom: '4px' }}>
-              Service Title / Package *
-            </label>
-            <input
-              type="text"
-              className="rv-search-input"
-              style={{ width: '100%', boxSizing: 'border-box' }}
-              placeholder="e.g. Airport Express Pickup — Ertiga"
-              value={serviceTitle}
-              onChange={(e) => setServiceTitle(e.target.value)}
-              required
-            />
-          </div>
-
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
-            <div>
-              <label style={{ display: 'block', fontSize: '11px', fontWeight: 600, color: 'var(--rv-text-muted)', marginBottom: '4px' }}>
-                Scheduled Time *
-              </label>
-              <input
-                type="text"
-                className="rv-search-input"
-                style={{ width: '100%', boxSizing: 'border-box' }}
-                placeholder="e.g. Today, 4:30 PM"
                 value={scheduledDateTime}
                 onChange={(e) => setScheduledDateTime(e.target.value)}
-                required
               />
             </div>
-            <div>
-              <label style={{ display: 'block', fontSize: '11px', fontWeight: 600, color: 'var(--rv-text-muted)', marginBottom: '4px' }}>
-                Driver Assigned
-              </label>
-              <input
-                type="text"
-                className="rv-search-input"
-                style={{ width: '100%', boxSizing: 'border-box' }}
-                placeholder="e.g. Ramesh K. (Unassigned)"
-                value={driverName}
-                onChange={(e) => setDriverName(e.target.value)}
-              />
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '12px' }}>
+              <div className="rv-form-group" style={{ margin: 0 }}>
+                <label className="rv-label">Pickup Location *</label>
+                <input
+                  type="text"
+                  className="rv-input"
+                  placeholder="Airport Terminal Gate 2"
+                  required
+                  value={pickupLocation}
+                  onChange={(e) => setPickupLocation(e.target.value)}
+                />
+              </div>
+
+              <div className="rv-form-group" style={{ margin: 0 }}>
+                <label className="rv-label">Drop Destination *</label>
+                <input
+                  type="text"
+                  className="rv-input"
+                  placeholder="Hotel Radisson Blu"
+                  required
+                  value={dropLocation}
+                  onChange={(e) => setDropLocation(e.target.value)}
+                />
+              </div>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '12px' }}>
+              <div className="rv-form-group" style={{ margin: 0 }}>
+                <label className="rv-label">Assigned Driver</label>
+                <input
+                  type="text"
+                  className="rv-input"
+                  placeholder="Ramesh K."
+                  value={driverName}
+                  onChange={(e) => setDriverName(e.target.value)}
+                />
+              </div>
+
+              <div className="rv-form-group" style={{ margin: 0 }}>
+                <label className="rv-label">Vehicle Details</label>
+                <input
+                  type="text"
+                  className="rv-input"
+                  placeholder="Swift Dzire MH-31 EA 4091"
+                  value={vehicleDetails}
+                  onChange={(e) => setVehicleDetails(e.target.value)}
+                />
+              </div>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+              <div className="rv-form-group" style={{ margin: 0 }}>
+                <label className="rv-label">Total Amount (₹) *</label>
+                <input
+                  type="number"
+                  className="rv-input"
+                  placeholder="2400"
+                  required
+                  min="0"
+                  value={totalAmount}
+                  onChange={(e) => setTotalAmount(e.target.value)}
+                />
+              </div>
+
+              <div className="rv-form-group" style={{ margin: 0 }}>
+                <label className="rv-label">Advance Paid (₹)</label>
+                <input
+                  type="number"
+                  className="rv-input"
+                  placeholder="1200"
+                  min="0"
+                  value={advancePaid}
+                  onChange={(e) => setAdvancePaid(e.target.value)}
+                />
+              </div>
             </div>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
-            <div>
-              <label style={{ display: 'block', fontSize: '11px', fontWeight: 600, color: 'var(--rv-text-muted)', marginBottom: '4px' }}>
-                Pickup Location *
-              </label>
-              <input
-                type="text"
-                className="rv-search-input"
-                style={{ width: '100%', boxSizing: 'border-box' }}
-                placeholder="e.g. Nagpur Airport Gate 2"
-                value={pickupLocation}
-                onChange={(e) => setPickupLocation(e.target.value)}
-                required
-              />
-            </div>
-            <div>
-              <label style={{ display: 'block', fontSize: '11px', fontWeight: 600, color: 'var(--rv-text-muted)', marginBottom: '4px' }}>
-                Drop Location *
-              </label>
-              <input
-                type="text"
-                className="rv-search-input"
-                style={{ width: '100%', boxSizing: 'border-box' }}
-                placeholder="e.g. Radisson Blu Civil Lines"
-                value={dropLocation}
-                onChange={(e) => setDropLocation(e.target.value)}
-                required
-              />
-            </div>
-          </div>
-
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '10px' }}>
-            <div>
-              <label style={{ display: 'block', fontSize: '11px', fontWeight: 600, color: 'var(--rv-text-muted)', marginBottom: '4px' }}>
-                Vehicle Details
-              </label>
-              <input
-                type="text"
-                className="rv-search-input"
-                style={{ width: '100%', boxSizing: 'border-box' }}
-                placeholder="MH-31 EA 4091"
-                value={vehicleDetails}
-                onChange={(e) => setVehicleDetails(e.target.value)}
-              />
-            </div>
-            <div>
-              <label style={{ display: 'block', fontSize: '11px', fontWeight: 600, color: 'var(--rv-text-muted)', marginBottom: '4px' }}>
-                Total Amount (₹) *
-              </label>
-              <input
-                type="number"
-                className="rv-search-input"
-                style={{ width: '100%', boxSizing: 'border-box' }}
-                placeholder="2400"
-                value={totalAmount}
-                onChange={(e) => setTotalAmount(e.target.value)}
-                required
-              />
-            </div>
-            <div>
-              <label style={{ display: 'block', fontSize: '11px', fontWeight: 600, color: 'var(--rv-text-muted)', marginBottom: '4px' }}>
-                Advance Paid (₹)
-              </label>
-              <input
-                type="number"
-                className="rv-search-input"
-                style={{ width: '100%', boxSizing: 'border-box' }}
-                placeholder="1200"
-                value={advancePaid}
-                onChange={(e) => setAdvancePaid(e.target.value)}
-              />
-            </div>
-          </div>
-
-          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px', marginTop: '12px' }}>
-            <Button variant="secondary" onClick={onClose} type="button">
+          <div className="rv-modal__footer">
+            <Button type="button" variant="secondary" size="md" onClick={onClose} disabled={submitting}>
               Cancel
             </Button>
-            <Button variant="primary" type="submit" disabled={submitting}>
-              {submitting ? 'Creating Work Order...' : 'Create & Dispatch Job'}
+            <Button type="submit" variant="primary" size="md" disabled={submitting}>
+              {submitting ? 'Creating Work Order...' : '+ Schedule Dispatch Job'}
             </Button>
           </div>
         </form>
