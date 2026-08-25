@@ -34,17 +34,43 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<UserProfile | null>(() => {
+/**
+ * Persist a verified user profile to localStorage.
+ * Never persists the hardcoded dev fallback user (id: 'usr-admin-01').
+ */
+const persistUser = (profile: UserProfile): void => {
+  if (!profile?.id || profile.id === 'usr-admin-01') return;
+  try {
+    localStorage.setItem('rv_active_user', JSON.stringify(profile));
+  } catch {
+    // localStorage may be unavailable in sandboxed environments — fail silently
+  }
+};
+
+/**
+ * Safely read a stored user profile from localStorage.
+ * Returns null if the stored value is the legacy dev fallback or malformed.
+ */
+const readStoredUser = (): UserProfile | null => {
+  try {
     const saved = localStorage.getItem('rv_active_user');
-    return saved ? JSON.parse(saved) : {
-      id: 'usr-admin-01',
-      email: 'ops.admin@rivet.internal',
-      fullName: 'Suresh M. (Ops Admin)',
-      role: 'admin' as UserRole,
-      workspaceId: DEV_WORKSPACE_ID,
-    };
-  });
+    if (!saved) return null;
+    const parsed = JSON.parse(saved) as UserProfile;
+    // Reject the legacy hardcoded dev user that should never have been persisted
+    if (parsed?.id === 'usr-admin-01') {
+      localStorage.removeItem('rv_active_user');
+      return null;
+    }
+    return parsed;
+  } catch {
+    return null;
+  }
+};
+
+export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  // FIX: Default is null, not a hardcoded fake admin.
+  // readStoredUser() also rejects the legacy 'usr-admin-01' sentinel.
+  const [user, setUser] = useState<UserProfile | null>(readStoredUser);
 
   const [loading, setLoading] = useState(false);
   const [bootstrapping, setBootstrapping] = useState<boolean>(isSupabaseConfigured);
@@ -52,6 +78,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
 
   const fetchUserProfile = async (userId: string, email: string) => {
+    if (!isSupabaseConfigured || !supabase) return;
     try {
       const { data } = await supabase
         .from('user_profiles')
@@ -60,7 +87,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         .single();
 
       if (data) {
-        const resolvedWorkspaceId = data.workspace_id || DEV_WORKSPACE_ID;
+        // FIX: Do NOT fall back to DEV_WORKSPACE_ID for production users.
+        // A missing workspace_id means the user needs to create/join a workspace.
+        // We set workspaceId to '' and let the app's auth gate show the workspace setup screen.
+        const resolvedWorkspaceId = data.workspace_id || '';
         const profile: UserProfile = {
           id: data.id,
           email: data.email || email,
@@ -69,21 +99,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           workspaceId: resolvedWorkspaceId,
         };
         setUser(profile);
-        localStorage.setItem('rv_active_user', JSON.stringify(profile));
+        persistUser(profile);
 
-        // Idempotent: ensure workspace_members row exists for this session
-        await ApiService.ensureWorkspaceMembership(userId, resolvedWorkspaceId, data.role || 'operations');
+        // Idempotent: ensure workspace_members row exists — only if workspace is real
+        if (resolvedWorkspaceId) {
+          await ApiService.ensureWorkspaceMembership(userId, resolvedWorkspaceId, data.role || 'operations');
+        }
       } else {
-        // Create basic profile context if profile row is missing
+        // Profile row missing: set a minimal authenticated but workspaceless state.
+        // The app's auth gate will prompt workspace creation.
         const fallbackProfile: UserProfile = {
           id: userId,
           email,
           fullName: email.split('@')[0] || 'Ops Staff',
           role: 'operations',
-          workspaceId: DEV_WORKSPACE_ID,
+          workspaceId: '', // FIX: empty string, not DEV_WORKSPACE_ID
         };
         setUser(fallbackProfile);
-        localStorage.setItem('rv_active_user', JSON.stringify(fallbackProfile));
+        // Do NOT persist a profile with no workspace — it will be re-resolved on next boot
       }
     } catch (err: unknown) {
       console.warn('[Rivet Auth] Profile resolution warning:', err);
@@ -91,7 +124,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const initAuthSession = useCallback(async () => {
-    if (!isSupabaseConfigured) {
+    if (!isSupabaseConfigured || !supabase) {
       setBootstrapping(false);
       setBootstrapError(null);
       return;
@@ -120,7 +153,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (session?.user) {
         await fetchUserProfile(session.user.id, session.user.email || '');
       } else {
-        // If no active Supabase session, keep stored user or clear if explicit logout
+        // No active session — ensure user state is null (not a stale localStorage value)
+        // unless the stored user was explicitly saved from a valid prior session
       }
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Authentication session check failed';
@@ -133,7 +167,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     initAuthSession();
 
-    if (!isSupabaseConfigured) return;
+    if (!isSupabaseConfigured || !supabase) return;
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       if (session?.user) {
@@ -152,7 +186,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const signIn = async (email: string, password?: string) => {
-    if (isSupabaseConfigured && password) {
+    if (isSupabaseConfigured && supabase && password) {
       const { error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) return { error: error.message };
       setIsAuthModalOpen(false);
@@ -168,13 +202,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       workspaceId: DEV_WORKSPACE_ID,
     };
     setUser(profile);
-    localStorage.setItem('rv_active_user', JSON.stringify(profile));
+    persistUser(profile);
     setIsAuthModalOpen(false);
     return { error: null };
   };
 
   const signUp = async (email: string, password?: string, fullName?: string) => {
-    if (isSupabaseConfigured && password) {
+    if (isSupabaseConfigured && supabase && password) {
       const { error } = await supabase.auth.signUp({
         email,
         password,
@@ -197,7 +231,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         role: res.role,
       };
       setUser(updatedUser);
-      localStorage.setItem('rv_active_user', JSON.stringify(updatedUser));
+      persistUser(updatedUser);
       return { error: null };
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Failed to join workspace';
@@ -206,18 +240,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const switchRole = async (newRole: UserRole) => {
-    if (!user) return;
+    // FIX: Only admins may switch roles. Prevents client-side privilege escalation.
+    if (!user || user.role !== 'admin') {
+      console.warn('[Rivet Auth] switchRole rejected: caller is not admin');
+      return;
+    }
     const updated = { ...user, role: newRole };
     setUser(updated);
-    localStorage.setItem('rv_active_user', JSON.stringify(updated));
+    persistUser(updated);
 
-    if (isSupabaseConfigured) {
+    if (isSupabaseConfigured && supabase) {
       await supabase.from('user_profiles').update({ role: newRole }).eq('id', user.id);
     }
   };
 
   const signOut = async () => {
-    if (isSupabaseConfigured) {
+    if (isSupabaseConfigured && supabase) {
       await supabase.auth.signOut();
     }
     setUser(null);

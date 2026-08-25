@@ -16,13 +16,21 @@ interface RivetAppProps {
   onBackToPortfolio?: () => void;
 }
 
+// FIX: Use import.meta.env.BASE_URL instead of hardcoding '/Rivet'
+// This works correctly on any deployment path (local, /Rivet/, custom subdomain, etc.)
+const BASE = import.meta.env.BASE_URL?.replace(/\/$/, '') ?? '';
+
 const getInitialTab = (): ActiveModule => {
   if (typeof window === 'undefined') return 'dashboard';
-  
-  const pathSegments = window.location.pathname.split('/').filter(Boolean);
-  const lastSegment = pathSegments[pathSegments.length - 1]?.toLowerCase();
+
   const validTabs: ActiveModule[] = ['dashboard', 'leads', 'jobs', 'payments', 'customers', 'tasks'];
-  
+
+  // Strip the base prefix before parsing the path segment
+  const fullPath = window.location.pathname;
+  const relativePath = BASE ? fullPath.replace(new RegExp(`^${BASE}`), '') : fullPath;
+  const pathSegments = relativePath.split('/').filter(Boolean);
+  const lastSegment = pathSegments[pathSegments.length - 1]?.toLowerCase();
+
   if (lastSegment && validTabs.includes(lastSegment as ActiveModule)) {
     return lastSegment as ActiveModule;
   }
@@ -35,8 +43,35 @@ const getInitialTab = (): ActiveModule => {
   return 'dashboard';
 };
 
+// Signed-out landing screen — shown when bootstrap is complete but user is null
+const AuthGate: React.FC = () => {
+  const { openAuthModal } = useAuth();
+  return (
+    <div className="rv-auth-gate">
+      <div className="rv-auth-gate__inner">
+        <div className="rv-auth-gate__logo">
+          <svg width="32" height="32" viewBox="0 0 32 32" fill="none" aria-hidden="true">
+            <rect width="32" height="32" rx="8" fill="rgba(94,234,212,0.1)" stroke="rgba(94,234,212,0.3)" strokeWidth="1"/>
+            <path d="M8 10h10M8 16h8M8 22h12" stroke="#5eead4" strokeWidth="2" strokeLinecap="round"/>
+            <circle cx="23" cy="16" r="4" stroke="#5eead4" strokeWidth="2"/>
+          </svg>
+          <span className="rv-auth-gate__logo-text">RIVET</span>
+        </div>
+        <h1 className="rv-auth-gate__title">Operations Control Room</h1>
+        <p className="rv-auth-gate__desc">
+          Sign in to access your workspace, dispatch queue, and operational data.
+        </p>
+        <button className="rv-btn rv-btn--primary rv-btn--lg" onClick={openAuthModal}>
+          Sign In
+        </button>
+      </div>
+      <AuthModal />
+    </div>
+  );
+};
+
 const RivetAppContent: React.FC<RivetAppProps> = ({ onBackToPortfolio }) => {
-  const { bootstrapping, bootstrapError, retryBootstrap, dismissBootstrapError } = useAuth();
+  const { user, bootstrapping, bootstrapError, retryBootstrap, dismissBootstrapError } = useAuth();
   const [activeTab, setActiveTab] = useState<ActiveModule>(getInitialTab);
 
   useEffect(() => {
@@ -50,24 +85,20 @@ const RivetAppContent: React.FC<RivetAppProps> = ({ onBackToPortfolio }) => {
   const handleSelectTab = (tab: ActiveModule) => {
     setActiveTab(tab);
     if (typeof window !== 'undefined') {
-      const pathSegments = window.location.pathname.split('/').filter(Boolean);
-      // Detect if app is hosted under subpath (e.g. /Rivet/)
-      const isSubpath = pathSegments.length > 0 && pathSegments[0].toLowerCase() === 'rivet';
-      const basePrefix = isSubpath ? '/Rivet' : '';
-      const targetPath = tab === 'dashboard' ? `${basePrefix}/` : `${basePrefix}/${tab}`;
-      
+      // FIX: Use the BASE constant derived from import.meta.env.BASE_URL
+      const targetPath = tab === 'dashboard' ? `${BASE}/` : `${BASE}/${tab}`;
       if (window.location.pathname !== targetPath) {
         window.history.pushState({}, '', targetPath);
       }
     }
   };
 
-  // If app is currently bootstrapping auth session
+  // Bootstrapping: auth session being resolved
   if (bootstrapping) {
     return <AppLoadingShell />;
   }
 
-  // If bootstrap failed or timed out and has an error state
+  // Bootstrap failed or timed out
   if (bootstrapError) {
     return (
       <AppLoadingShell
@@ -78,9 +109,14 @@ const RivetAppContent: React.FC<RivetAppProps> = ({ onBackToPortfolio }) => {
     );
   }
 
+  // FIX: Auth gate — unauthenticated users see a sign-in screen, not the app
+  if (!user) {
+    return <AuthGate />;
+  }
+
   return (
     <div style={{ position: 'relative' }}>
-      {/* Optional top banner for switching back to portfolio when in demo mode */}
+      {/* Optional top banner when running in portfolio demo mode */}
       {onBackToPortfolio && (
         <div
           style={{
