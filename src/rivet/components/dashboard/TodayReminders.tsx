@@ -1,6 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { TaskRecord, SimulationMode } from '../../types/rivet';
-import { INITIAL_TASKS } from '../../data/mockData';
 import { Card } from '../ui/Card';
 import { TaskItem } from '../ui/TaskItem';
 import { EmptyState } from '../ui/EmptyState';
@@ -13,12 +12,16 @@ interface TodayRemindersProps {
 }
 
 export const TodayReminders: React.FC<TodayRemindersProps> = ({
-  tasks = INITIAL_TASKS,
+  tasks = [],
   onTaskAction,
   simMode,
 }) => {
   const [taskList, setTaskList] = useState<TaskRecord[]>(tasks);
   const [filter, setFilter] = useState<'pending' | 'overdue' | 'all'>('pending');
+
+  useEffect(() => {
+    setTaskList(tasks);
+  }, [tasks]);
 
   const handleStatusChange = (task: TaskRecord, newStatus: TaskRecord['status']) => {
     setTaskList((prev) =>

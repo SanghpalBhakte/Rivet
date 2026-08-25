@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { INITIAL_QUEUE_ITEMS } from '../../data/mockData';
-import { QueueItem, SimulationMode } from '../../types/rivet';
+import { QueueItem, SimulationMode, TaskRecord } from '../../types/rivet';
 import { PageHeader } from '../ui/PageHeader';
 import { TodayQueue } from './TodayQueue';
 import { TodayReminders } from './TodayReminders';
@@ -15,7 +14,6 @@ export const DashboardView: React.FC = () => {
   const { user } = useAuth();
   const workspaceId = user?.workspaceId || DEV_WORKSPACE_ID;
 
-  const [queueItems, setQueueItems] = useState<QueueItem[]>(INITIAL_QUEUE_ITEMS);
   const [simMode, setSimMode] = useState<SimulationMode>('normal');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
@@ -25,6 +23,7 @@ export const DashboardView: React.FC = () => {
   }>>([]);
   const [pipelineStages, setPipelineStages] = useState<Array<{ stage: string; count: number }>>([]);
   const [recentActivity, setRecentActivity] = useState<ActivityLogEntry[]>([]);
+  const [tasks, setTasks] = useState<TaskRecord[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -32,22 +31,43 @@ export const DashboardView: React.FC = () => {
     Promise.all([
       ApiService.getDashboardMetrics(workspaceId),
       ApiService.getActivityLog(workspaceId, undefined, 12),
+      ApiService.getTasks(),
     ])
-      .then(([dashboard, activity]) => {
+      .then(([dashboard, activity, liveTasks]) => {
         setMetrics(dashboard.metrics);
         setPipelineStages(dashboard.pipelineStages);
         setRecentActivity(activity);
+        setTasks(liveTasks);
       })
       .catch(console.error)
       .finally(() => setLoading(false));
   }, [workspaceId]);
 
+  // Convert live DB tasks into QueueItems for Today's Queue
+  const queueItems: QueueItem[] = tasks
+    .filter((t) => t.status !== 'Done')
+    .map((t) => ({
+      id: t.id,
+      type: t.status === 'Overdue' ? 'overdue' : t.type === 'Callback' ? 'callback' : 'job',
+      title: t.title,
+      context: t.notes || `Assigned to ${t.assignee}`,
+      clientName: t.linkedEntityName || 'Operations Client',
+      clientPhone: 'Contact via Desk',
+      dueTime: t.dueDateTime,
+      dueDate: 'Today',
+      status: 'pending',
+      priority: t.priority === 'Critical' ? 'critical' : t.priority === 'High' ? 'high' : 'normal',
+      actionLabel: 'Mark Completed',
+      actionType: 'note',
+    }));
+
   const handleActionComplete = (id: string) => {
-    setQueueItems((prev) => prev.filter((item) => item.id !== id));
+    ApiService.updateTaskStatus(id, 'Done')
+      .then((updated) => setTasks(updated))
+      .catch(console.error);
   };
 
   const handleResetData = () => {
-    setQueueItems(INITIAL_QUEUE_ITEMS);
     setSimMode('normal');
     setErrorMessage(null);
   };
@@ -60,6 +80,8 @@ export const DashboardView: React.FC = () => {
       setErrorMessage(null);
     }
   };
+
+  const isNewWorkspace = !loading && tasks.length === 0 && recentActivity.length === 0;
 
   return (
     <div>
@@ -78,6 +100,35 @@ export const DashboardView: React.FC = () => {
           <Button variant="secondary" size="sm" onClick={handleResetData}>
             Retry Sync
           </Button>
+        </div>
+      )}
+
+      {/* New Workspace Onboarding Banner */}
+      {isNewWorkspace && (
+        <div
+          style={{
+            background: 'var(--rv-bg-surface-elevated)',
+            border: '1px solid var(--rv-brand-border)',
+            borderLeft: '4px solid var(--rv-brand)',
+            borderRadius: '8px',
+            padding: '16px 20px',
+            marginBottom: '20px',
+          }}
+        >
+          <div style={{ fontSize: '15px', fontWeight: 700, color: 'var(--rv-text-primary)', marginBottom: '4px' }}>
+            👋 Welcome to your Rivet Control Room
+          </div>
+          <p style={{ margin: '0 0 12px', fontSize: '13px', color: 'var(--rv-text-secondary)', lineHeight: 1.5 }}>
+            Your workspace is ready for real operations. Register incoming service leads, schedule dispatch jobs, or track client billing.
+          </p>
+          <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+            <span style={{ fontSize: '12px', color: 'var(--rv-text-muted)', alignSelf: 'center' }}>
+              Quick Onboarding Triggers:
+            </span>
+            <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--rv-brand)' }}>
+              Use the sidebar to create Leads, Dispatches, or Tasks.
+            </span>
+          </div>
         </div>
       )}
 
@@ -110,7 +161,7 @@ export const DashboardView: React.FC = () => {
             onActionComplete={handleActionComplete}
             simMode={simMode}
           />
-          <TodayReminders simMode={simMode} />
+          <TodayReminders tasks={tasks} simMode={simMode} />
         </section>
 
         <aside aria-label="Pipeline & Activity Intelligence" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>

@@ -491,7 +491,7 @@ export const ApiService = {
         .select('*')
         .order('created_at', { ascending: false });
       if (error) console.error('[Rivet] getCustomers:', error.message);
-      if (data && data.length > 0) return (data as Record<string, unknown>[]).map(mapCustomer);
+      if (data) return (data as Record<string, unknown>[]).map(mapCustomer);
     }
     return FALLBACK_CUSTOMERS;
   },
@@ -594,7 +594,7 @@ export const ApiService = {
         .select('*')
         .order('created_at', { ascending: false });
       if (error) console.error('[Rivet] getLeads:', error.message);
-      if (data && data.length > 0) {
+      if (data) {
         const leads = (data as Record<string, unknown>[]).map(mapLead);
         for (const lead of leads) {
           lead.notes = await _loadNotes(lead.id);
@@ -720,7 +720,7 @@ export const ApiService = {
         .select('*')
         .order('created_at', { ascending: false });
       if (error) console.error('[Rivet] getJobs:', error.message);
-      if (data && data.length > 0) {
+      if (data) {
         const jobs = (data as Record<string, unknown>[]).map(mapJob);
         for (const job of jobs) {
           const notes = await _loadNotes(job.id);
@@ -769,7 +769,7 @@ export const ApiService = {
         .select('*')
         .order('created_at', { ascending: false });
       if (error) console.error('[Rivet] getTasks:', error.message);
-      if (data && data.length > 0) return (data as Record<string, unknown>[]).map(mapTask);
+      if (data) return (data as Record<string, unknown>[]).map(mapTask);
     }
     return FALLBACK_TASKS;
   },
@@ -859,7 +859,7 @@ export const ApiService = {
         .select('*')
         .order('created_at', { ascending: false });
       if (error) console.error('[Rivet] getPayments:', error.message);
-      if (data && data.length > 0) {
+      if (data) {
         const payments = (data as Record<string, unknown>[]).map(mapPayment);
         for (const payment of payments) {
           const notes = await _loadNotes(payment.id);
